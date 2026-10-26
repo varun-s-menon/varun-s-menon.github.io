@@ -12,7 +12,7 @@
   --check-x: #6cc3bf;
   --check-z: #2f5c5b;
 
-  --serif: "Fraunces", Georgia, "Times New Roman", serif;
+  --serif: "Newsreader", Georgia, "Times New Roman", serif;
   --sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
 }
@@ -70,7 +70,7 @@ a:hover { background-size: 100% 1px; }
 }
 .mark {
   font-family: var(--serif);
-  font-weight: 600;
+  font-weight: 500;
   font-size: 18px;
   color: var(--ink);
 }
@@ -160,10 +160,10 @@ a:hover { background-size: 100% 1px; }
 .nowrap { white-space: nowrap; }
 h1 {
   font-family: var(--serif);
-  font-weight: 500;
-  font-size: clamp(44px, 7vw, 64px);
+  font-weight: 300;
+  font-size: clamp(46px, 7.4vw, 68px);
   line-height: 1.02;
-  letter-spacing: -.02em;
+  letter-spacing: -.015em;
   margin: 0 0 22px;
 }
 .lede {
@@ -254,8 +254,8 @@ h1 {
 }
 .section-title {
   font-family: var(--serif);
-  font-weight: 500;
-  font-size: 30px;
+  font-weight: 400;
+  font-size: 32px;
   letter-spacing: -.01em;
   margin: 0 0 28px;
   padding-bottom: 14px;
@@ -305,8 +305,8 @@ h1 {
 }
 .theme-head h3 {
   font-family: var(--serif);
-  font-weight: 500;
-  font-size: 21px;
+  font-weight: 400;
+  font-size: 22px;
   margin: 0 0 10px;
   line-height: 1.25;
 }
