@@ -1,36 +1,22 @@
 :root {
-  --paper: #f6f3ec;
-  --paper-2: #efebe1;
-  --ink: #1c1d21;
-  --ink-2: #44464d;
-  --muted: #7a7a80;
-  --rule: #ddd7c9;
-  --accent: #0f5c63;       /* deep teal */
-  --accent-soft: #d5e5e3;
-  --hot: #e8590c;          /* error / highlight */
-  --check-x: #0f5c63;
-  --check-z: #8fb5b1;
+  color-scheme: dark;
+  --paper: #15171a;
+  --paper-2: #1c1f23;
+  --ink: #ece8df;
+  --ink-2: #c3c0b8;
+  --muted: #8a8a90;
+  --rule: #2c3036;
+  --accent: #6cc3bf;
+  --accent-soft: #1d3436;
+  --hot: #ff8a4c;
+  --check-x: #6cc3bf;
+  --check-z: #2f5c5b;
 
   --serif: "Fraunces", Georgia, "Times New Roman", serif;
   --sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #15171a;
-    --paper-2: #1c1f23;
-    --ink: #ece8df;
-    --ink-2: #c3c0b8;
-    --muted: #8a8a90;
-    --rule: #2c3036;
-    --accent: #6cc3bf;
-    --accent-soft: #1d3436;
-    --hot: #ff8a4c;
-    --check-x: #6cc3bf;
-    --check-z: #2f5c5b;
-  }
-}
 
 * { box-sizing: border-box; }
 
