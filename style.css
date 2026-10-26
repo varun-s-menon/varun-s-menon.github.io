@@ -168,7 +168,7 @@ h1 {
 }
 .lede {
   font-family: var(--sans);
-  font-weight: 300;
+  font-weight: 400;
   font-size: 22px;
   line-height: 1.5;
   letter-spacing: -0.005em;
@@ -177,7 +177,7 @@ h1 {
 }
 .lede em {
   font-style: normal;
-  font-weight: 400;
+  font-weight: 500;
   color: var(--accent);
 }
 .hero-text p { color: var(--ink-2); }
