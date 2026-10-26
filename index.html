@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Varun Menon</title>
+  <meta name="description" content="Varun Menon, quantum information PhD candidate at Harvard working on quantum error correction and fault tolerance, many-body physics, and quantum algorithms.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231c1d21'/><circle cx='10' cy='10' r='3' fill='%23f6f3ec'/><circle cx='22' cy='10' r='3' fill='%23f6f3ec'/><circle cx='10' cy='22' r='3' fill='%23f6f3ec'/><circle cx='22' cy='22' r='3' fill='%23e8590c'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="mark" href="#top">Varun Menon</a>
+      <nav>
+        <div class="dropdown">
+          <a href="#research" class="dropdown-toggle" aria-haspopup="true">Research <span class="caret" aria-hidden="true"></span></a>
+          <div class="dropdown-menu">
+            <a href="#fault-tolerance">Quantum error-correction with qLDPC codes</a>
+            <a href="#many-body">Quantum many-body physics</a>
+            <a href="#algorithms">Quantum algorithms</a>
+          </div>
+        </div>
+        <a href="#talks">Talks</a>
+        <a href="#path" class="nav-exp">Experience</a>
+        <a href="static/cv.pdf">CV</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+
+    <!-- ============ INTRO ============ -->
+    <section class="hero wrap">
+      <div class="hero-text">
+        <div class="intro-head">
+          <img class="portrait" src="static/varun.jpg" alt="Varun Menon" width="560" height="700">
+          <div>
+            <p class="eyebrow"><span>Quantum Information PhD candidate</span><span>Harvard University</span></p>
+            <h1>Varun Menon</h1>
+          </div>
+        </div>
+        <p class="lede">
+          I am a researcher working on problems in <em>quantum error correction</em>
+          and <em>fault-tolerant quantum computation</em>.
+          I am also interested in <em>many-body quantum physics</em> and
+          <em>quantum algorithms</em> for simulating complex systems.
+        </p>
+        <p>
+          I'm a doctoral candidate in the <a href="https://lukin.physics.harvard.edu/">Lukin Group</a>
+          at Harvard, advised by Mikhail Lukin, and an Ashford Graduate Fellow.
+          Most of my recent work is on finding efficient ways to perform logic on
+          quantum low-density parity-check codes. This includes designing protocols
+          that prepare magic states and run logical gates with far less overhead
+          than conventional approaches. I'm also interested in
+          what fault-tolerant machines should do once they exist, especially
+          simulating interacting many-body systems. I'm excited about how frontier
+          AI models can accelerate quantum computing research, and much of my work
+          is supported by and done in collaboration with Anthropic's
+          <a href="https://www.anthropic.com/news/ai-for-science-program">AI for Science program</a>.
+        </p>
+        <p>
+          Prior to starting my PhD, I studied physics, computer science, and applied
+          math at UC Berkeley.
+          I have also worked on quantum algorithms at Google Quantum AI, quantum
+          simulation of strongly correlated systems at IBM Quantum, and
+          superconducting hardware at Q-CTRL.
+        </p>
+        <ul class="links">
+          <li><a href="mailto:varunmenon@g.harvard.edu">varunmenon@g.harvard.edu</a></li>
+          <li><a href="static/cv.pdf">CV (PDF)</a></li>
+          <!-- Add your profiles here, e.g.:
+          <li><a href="https://scholar.google.com/citations?user=XXXX">Google Scholar</a></li>
+          <li><a href="https://github.com/XXXX">GitHub</a></li>
+          -->
+        </ul>
+      </div>
+
+      <figure class="lattice-fig" aria-hidden="true">
+        <svg id="lattice" viewBox="0 0 300 300" role="img"></svg>
+      </figure>
+    </section>
+
+    <!-- ============ RESEARCH ============ -->
+    <section id="research" class="wrap block">
+      <h2 class="section-title"><span class="num">01</span>Research</h2>
+
+      <div class="theme" id="fault-tolerance">
+        <div class="theme-head">
+          <h3>Fault-tolerant logic on qLDPC codes</h3>
+          <p>
+            Quantum LDPC codes can sharply reduce the number of physical qubits
+            needed per logical qubit. A central open problem is performing logic on
+            them without giving those savings back. My work aims to minimize
+            the spacetime cost of the key components of performing logic on qLDPC
+            codes, which include magic-state preparation, lattice surgery, and
+            quantum memory, as well as their efficient implementation on
+            neutral-atom hardware.
+          </p>
+        </div>
+
+        <ol class="pubs">
+          <li>
+            <a class="title" href="https://doi.org/10.1103/ghhp-cytl">Magic tricycles: efficient magic-state generation with finite block-length quantum LDPC codes</a>
+            <span class="authors"><b>V. Menon</b>, J. P. B. Ataides, et al.</span>
+            <span class="venue">Physical Review X 16, 021014 (2026)</span>
+            <span class="tags"><span class="tag">QEC 2026</span><span class="tag">TQC 2026</span></span>
+          </li>
+          <li>
+            <a class="title" href="https://arxiv.org/abs/2610.10731">Single-shot magic state factories for quantum LDPC codes</a>
+            <span class="authors"><b>V. Menon</b>, R. Mehta, et al.</span>
+            <span class="venue">arXiv:2610.10731 (2026)</span>
+            <span class="tags"><span class="tag new">new</span></span>
+          </li>
+          <li>
+            <a class="title" href="https://arxiv.org/abs/2610.06749">Efficient logic with ultra-high-rate quantum codes</a>
+            <span class="authors">N. Maskara, R. Mehta, Z. He, <b>V. Menon</b>, et al.</span>
+            <span class="venue">arXiv:2610.06749 (2026)</span>
+          </li>
+          <li>
+            <a class="title" href="https://arxiv.org/abs/2610.06828">The practical cost of magic state cultivation</a>
+            <span class="authors">R. Mehta, <b>V. Menon</b>, et al.</span>
+            <span class="venue">arXiv:2610.06828 (2026)</span>
+          </li>
+          <li>
+            <a class="title" href="https://doi.org/10.1145/3770743.3803913">Syndrome extraction circuits with near-optimal depths for practical quantum error correcting code families</a>
+            <span class="authors">D. B. Tan, J. P. B. Ataides, <b>V. Menon</b>, et al.</span>
+            <span class="venue">Design Automation Conference (DAC '26)</span>
+          </li>
+          <li>
+            <a class="title" href="https://arxiv.org/abs/2505.18265">Non-Clifford gates between stabilizer codes via non-Abelian topological order</a>
+            <span class="authors">R. Sajith, Z. Song, B. Roberts, <b>V. Menon</b>, Y. Li</span>
+            <span class="venue">PRX Quantum 7, 010361 (2026)</span>
+          </li>
+          <li>
+            <a class="title" href="https://sunnyzhiyanghe.github.io/blog/round-robin-ccz/">Round-robin CCZ is all you need</a>
+            <span class="desc">A post on my friend <a href="https://sunnyzhiyanghe.github.io/#writings_and_talks">Sunny He&rsquo;s blog</a> that we wrote together. Sunny is a graduate student at MIT and an expert on qLDPC surgery. The post explores how any code-space-preserving circuit of diagonal gates is generated by certain primitive &ldquo;round-robin&rdquo; gates, and applies this to finding transversal non-Clifford gates.</span>
+            <span class="venue">June 2026</span>
+            <span class="tags"><span class="tag">blog post</span></span>
+          </li>
+        </ol>
+      </div>
+
+      <div class="theme" id="many-body">
+        <div class="theme-head">
+          <h3>Quantum many-body physics</h3>
+          <p>
+            Entanglement structure in quantum magnets, exactly solvable spin chains,
+            and nonequilibrium phases of matter on quantum hardware. This line of work
+            started with tensor-network simulations at Berkeley and continued with
+            experiments on IBM's superconducting quantum processors.
+          </p>
+        </div>
+
+        <ol class="pubs">
+          <li>
+            <span class="title">Realizing anomalous Floquet phases and time-crystalline transport in an interacting disordered spin system on superconducting quantum computers</span>
+            <span class="authors"><b>V. Menon</b>, et al., with IBM Quantum</span>
+            <span class="venue">Manuscript in preparation</span>
+          </li>
+          <li>
+            <a class="title" href="https://arxiv.org/abs/2609.08134">Observation of multipartite spin entanglement in a cuprate chain</a>
+            <span class="authors">S. F. R. TenHuisen, Z. Shen, V. Bhartiya, <b>V. Menon</b>, et al.</span>
+            <span class="venue">arXiv:2609.08134 (2026)</span>
+          </li>
+          <li>
+            <a class="title" href="https://arxiv.org/abs/2408.16070">Symmetries, correlation functions, and entanglement of general quantum Motzkin spin-chains</a>
+            <span class="authors"><b>V. Menon</b>, A. Gu, R. Movassagh</span>
+            <span class="venue">arXiv:2408.16070 (2024)</span>
+            <span class="tags"><span class="tag">QIP 2025</span></span>
+          </li>
+          <li>
+            <a class="title" href="https://doi.org/10.1103/PhysRevB.107.054422">Multipartite entanglement in the one-dimensional spin-&frac12; Heisenberg antiferromagnet</a>
+            <span class="authors"><b>V. Menon</b>, et al.</span>
+            <span class="venue">Physical Review B 107, 054422 (2023)</span>
+            <span class="tags"><span class="tag">Editors' Suggestion</span></span>
+          </li>
+        </ol>
+      </div>
+
+      <div class="theme" id="algorithms">
+        <div class="theme-head">
+          <h3>Quantum algorithms</h3>
+          <p>
+            Algorithms for simulating interacting quantum systems and extracting
+            their spectra more cheaply.
+          </p>
+        </div>
+
+        <ol class="pubs">
+          <li>
+            <span class="title">Applications of shadow Hamiltonian simulation to equilibrium dynamics</span>
+            <span class="authors">With the Google Quantum AI team</span>
+            <span class="venue">Manuscript in preparation</span>
+          </li>
+          <li>
+            <span class="title">Memory-efficient quantum simulation via operator-space truncation</span>
+            <span class="authors">With the Google Quantum AI team</span>
+            <span class="venue">Manuscript in preparation</span>
+          </li>
+          <li>
+            <span class="title">Reducing the cost of phase estimation in simulation via super-resolution spectroscopy</span>
+            <span class="authors">With N. Maskara, N. Gjonbalaj, and others</span>
+            <span class="venue">Manuscript in preparation</span>
+          </li>
+        </ol>
+      </div>
+
+      <p class="aside">A full publication list is on my <a href="https://scholar.google.com/citations?user=SMoAxkcAAAAJ&amp;hl=en">Google Scholar</a> profile and my <a href="https://inspirehep.net/authors/3215389?ui-citation-summary=true">INSPIRE-HEP</a> page, which has a more up-to-date citation count.</p>
+    </section>
+
+    <!-- ============ TALKS ============ -->
+    <section id="talks" class="wrap block">
+      <h2 class="section-title"><span class="num">02</span>Selected talks</h2>
+      <ul class="talks">
+        <li>
+          <span class="when">QEC 2026</span>
+          <div><b>Efficient magic-state generation with tricycle quantum LDPC codes</b></div>
+        </li>
+        <li>
+          <span class="when">TQC 2026</span>
+          <div><b>Magic-state generation with finite-length quantum LDPC codes</b></div>
+        </li>
+        <li>
+          <span class="when">QIP 2025</span>
+          <div><b>Simulability and exact results in a class of highly entangled spin chains</b></div>
+        </li>
+        <li>
+          <span class="when">Google Quantum AI Tensor Network Seminar 2024</span>
+          <div><b>Quantum Motzkin spin-chains: exact results and classical simulation</b> <span class="tag">invited talk</span></div>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============ PATH ============ -->
+    <section id="path" class="wrap block">
+      <h2 class="section-title"><span class="num">03</span>Experience</h2>
+      <ul class="path">
+        <li>
+          <span class="when">2023&ndash;</span>
+          <div>
+            <b>Harvard University</b>, Lukin Group
+            <span class="role">Quantum Information PhD Candidate &middot; Quantum error correction and fault tolerance</span>
+          </div>
+        </li>
+        <li>
+          <span class="when">2026</span>
+          <div>
+            <b>Google Quantum AI</b>
+            <span class="role">Student Researcher &middot; Quantum algorithms team</span>
+          </div>
+        </li>
+        <li>
+          <span class="when">2024</span>
+          <div>
+            <b>IBM Quantum</b>
+            <span class="role">Quantum Research Scientist Intern &middot; Many-body quantum simulation</span>
+          </div>
+        </li>
+        <li>
+          <span class="when">2022&ndash;23</span>
+          <div>
+            <b>Q-CTRL</b>
+            <span class="role">Quantum Computing Research Scientist &middot; Error mitigation with machine learning</span>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+  </main>
+
+  <footer class="wrap footer">
+    <p>
+      Away from research I play drums, compete in amateur Muay Thai, enjoy Russian
+      literature, and volunteer with a Cambridge animal rescue.
+    </p>
+    <p class="fine">&copy; 2026 Varun Menon</p>
+  </footer>
+
+  <script src="lattice.js"></script>
+</body>
+</html>
