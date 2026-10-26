@@ -167,14 +167,17 @@ h1 {
   margin: 0 0 22px;
 }
 .lede {
-  font-family: var(--serif);
-  font-size: 23px;
-  line-height: 1.4;
+  font-family: var(--sans);
+  font-weight: 300;
+  font-size: 22px;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
   color: var(--ink);
   margin: 0 0 22px;
 }
 .lede em {
-  font-style: italic;
+  font-style: normal;
+  font-weight: 400;
   color: var(--accent);
 }
 .hero-text p { color: var(--ink-2); }
@@ -456,6 +459,6 @@ h1 {
   .wrap { padding-left: 16px; padding-right: 16px; }
   .topbar nav { gap: 14px; }
   .topbar nav .nav-exp { display: none; } /* hide "Experience" link on very small screens */
-  .lede { font-size: 20px; }
+  .lede { font-size: 19px; }
   .talks li, .path li { grid-template-columns: 1fr; gap: 2px; }
 }
