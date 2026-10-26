@@ -12,11 +12,18 @@ A static single-page site. No build step.
     python3 -m http.server 8000
     # open http://localhost:8000
 
-## Publish on GitHub Pages
+## Live site
 
-1. Create a repo named `<your-github-username>.github.io`.
-2. Push these files to its `main` branch.
-3. The site goes live at `https://<your-github-username>.github.io`.
+https://varun-s-menon.github.io
+
+Hosted on GitHub Pages from the `varun-s-menon/varun-s-menon.github.io`
+repository (`main` branch). To publish changes:
+
+    git add -A
+    git commit -m "Describe the change"
+    git push
+
+The live site updates within a minute or two.
 
 ## Updating
 
