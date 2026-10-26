@@ -161,7 +161,7 @@ a:hover { background-size: 100% 1px; }
 h1 {
   font-family: var(--serif);
   font-weight: 300;
-  font-size: clamp(46px, 7.4vw, 68px);
+  font-size: clamp(40px, 6vw, 54px);
   line-height: 1.02;
   letter-spacing: -.015em;
   margin: 0 0 22px;
