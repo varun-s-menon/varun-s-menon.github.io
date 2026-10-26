@@ -405,18 +405,34 @@ h1 {
 /* footer */
 .footer {
   margin-top: 56px;
-  padding-top: 28px;
   padding-bottom: 56px;
-  border-top: 1px solid var(--rule);
   color: var(--ink-2);
   font-size: 15px;
 }
-.footer p { margin: 0 0 6px; max-width: 620px; }
+.footer-inner {
+  padding-top: 32px;
+  border-top: 1px solid var(--rule);
+}
+.footer p { margin: 0 0 6px; max-width: 720px; }
+.footer .footer-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.footer .interests {
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 1.5;
+  color: var(--ink);
+}
 .footer .fine {
   font-family: var(--mono);
   font-size: 12px;
   color: var(--muted);
-  margin-top: 14px;
+  margin-top: 22px;
 }
 
 /* ---------- responsive ---------- */
