@@ -427,8 +427,9 @@ h1 {
 }
 .footer .interests {
   font-family: var(--sans);
-  font-size: 18px;
-  line-height: 1.5;
+  font-weight: 300;
+  font-size: 16.5px;
+  line-height: 1.55;
   color: var(--ink);
 }
 .footer .fine {
