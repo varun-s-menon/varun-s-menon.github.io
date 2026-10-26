@@ -426,8 +426,8 @@ h1 {
   margin-bottom: 10px;
 }
 .footer .interests {
-  font-family: var(--serif);
-  font-size: 19px;
+  font-family: var(--sans);
+  font-size: 18px;
   line-height: 1.5;
   color: var(--ink);
 }
