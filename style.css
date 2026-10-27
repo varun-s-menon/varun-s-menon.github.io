@@ -229,23 +229,29 @@ h1 {
 }
 #lattice { width: 100%; height: auto; display: block; }
 
-/* lattice svg parts */
-.lat-edge { stroke: var(--rule); stroke-width: 1.2; }
-.lat-check {
-  transition: fill .5s ease, transform .5s ease;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-.lat-check.x { fill: var(--accent-soft); }
-.lat-check.z { fill: var(--paper-2); stroke: var(--rule); stroke-width: 1; }
-.lat-check.lit { fill: var(--accent); transform: scale(1.12); }
-.lat-q {
+/* qLDPC Tanner graph */
+.tg-grid { stroke: var(--rule); stroke-width: 1; }
+.tg-q {
   fill: var(--paper);
-  stroke: var(--ink);
-  stroke-width: 1.4;
-  transition: fill .4s ease, stroke .4s ease;
+  stroke: var(--ink-2);
+  stroke-width: 1.2;
+  transition: fill .35s ease, stroke .35s ease;
 }
-.lat-q.err { fill: var(--hot); stroke: var(--hot); }
+.tg-q.err { fill: var(--hot); stroke: var(--hot); }
+.tg-c { transition: fill .35s ease; }
+.tg-c.x { fill: #24484a; }
+.tg-c.z { fill: #2b2f35; }
+.tg-c.lit { fill: var(--accent); }
+.tg-edge {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  opacity: .9;
+  transition: stroke-dashoffset .6s ease-out, opacity .5s ease;
+}
+.tg-edge.long { stroke-width: 1.1; opacity: .8; }
+.tg-edge.fade { opacity: 0; }
 
 /* ---------- sections ---------- */
 .block {
