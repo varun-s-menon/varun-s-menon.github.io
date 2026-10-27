@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://varun-s-menon.github.io/sitemap.xml
