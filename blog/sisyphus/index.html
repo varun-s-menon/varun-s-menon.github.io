@@ -1,0 +1,935 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sisyphus: a fast circuit-level distance estimator for quantum codes | Varun Menon</title>
+  <meta name="description" content="Sisyphus is an open-source estimator of circuit-level distance for quantum error correction. It finds light undetected faults in circuits with over a hundred thousand fault mechanisms, often in seconds.">
+  <link rel="canonical" href="https://varun-s-menon.github.io/blog/sisyphus/">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Sisyphus: a fast circuit-level distance estimator for quantum codes">
+  <meta property="og:description" content="An open-source, fast circuit-level distance estimator for large qLDPC circuits, and how it made optimal-depth syndrome extraction for ultra-high-rate codes possible.">
+  <meta property="og:url" content="https://varun-s-menon.github.io/blog/sisyphus/">
+  <meta property="og:image" content="https://raw.githubusercontent.com/varunmenon1310/sisyphus/main/docs/sisyphus_climb.gif">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231c1d21'/><circle cx='10' cy='10' r='3' fill='%23f6f3ec'/><circle cx='22' cy='10' r='3' fill='%23f6f3ec'/><circle cx='10' cy='22' r='3' fill='%23f6f3ec'/><circle cx='22' cy='22' r='3' fill='%23e8590c'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/post.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="mark" href="/">Varun Menon</a>
+      <nav>
+        <a href="/#research">Research</a>
+        <a href="/#talks">Talks</a>
+        <a href="/#path" class="nav-exp">Experience</a>
+        <a href="/blog/" class="active">Blog</a>
+        <a href="/static/cv.pdf">CV</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+  <article class="post">
+
+    <header class="post-head">
+      <p class="eyebrow">Open-source software</p>
+      <h1>Sisyphus: a fast circuit-level distance estimator for quantum codes</h1>
+      <p class="post-meta">Varun Menon &middot; November 24, 2026 &middot; <a href="https://github.com/varunmenon1310/sisyphus">github.com/varunmenon1310/sisyphus</a></p>
+    </header>
+
+    <p>
+      Quantum error correction encodes logical information redundantly across many physical qubits,
+      and this redundancy is one of the dominant costs of fault-tolerant quantum computing. In the surface
+      code, each logical qubit needs its own patch of physical qubits, whose size grows with the square
+      of the distance. Recent advances in quantum low-density parity-check
+      (qLDPC) codes have cut the cost of quantum memory dramatically. They combine sparse checks with
+      rates as high as 1/2 and high relative distance. The price is block length. The best codes span a few thousand qubits, which
+      makes finding good syndrome-extraction circuits for them a challenge.
+    </p>
+    <p>
+      These are CSS codes, defined by <span class="math">X</span>-type and
+      <span class="math">Z</span>-type parity checks on a few qubits each. An error that anticommutes
+      with a check flips its outcome, and the pattern of flipped checks, the syndrome, is passed to a
+      decoder. The code distance <span class="math">d</span> is the minimum weight of an error that
+      commutes with every check yet acts nontrivially on the encoded qubits.
+    </p>
+    <p>
+      The code distance assumes perfect measurements. In practice the checks are measured repeatedly by
+      a <strong>syndrome-extraction circuit</strong>, in which an ancilla qubit for each check interacts
+      with the check's data qubits through two-qubit gates and is then measured. Faults anywhere in the circuit
+      are caught by <em>detectors</em>, parities of
+      measurement outcomes that are deterministic without noise, such as a check's outcome in
+      consecutive rounds. At low physical error rates the logical error rate is then governed by
+      the <strong>circuit-level distance</strong>, the fewest faults that flip a logical observable
+      without triggering any detector. It is at most <span class="math">d</span>, and a poorly chosen
+      circuit can fall well below it.
+    </p>
+    <p>
+      For the surface code, distance-preserving circuits have long been known. For high-rate qLDPC
+      codes they are not, and even evaluating one candidate is a substantial computation.
+      <a href="https://github.com/quantumlib/Stim">Stim</a> converts a noisy circuit into a
+      <em>detector error model</em>, a sparse binary matrix with one column per fault mechanism that
+      records the detectors and logical observables it flips. For instance, a 14-round memory
+      experiment (repeated syndrome extraction followed by a final readout) on the [[2304,1156,14]]
+      affine permutation matrix (APM) code<a class="cite" href="#ref-1">[1,&nbsp;2]</a> has about
+      180,000 such columns after merging equivalent faults. Finding the lightest undetected logical
+      fault set is NP-hard, and at this scale existing estimators often return bounds far above the
+      true value.
+    </p>
+    <p>
+      <a href="https://github.com/varunmenon1310/sisyphus">Sisyphus</a> is an open-source estimator
+      of circuit-level and CSS code distance built for this regime. On the largest circuits in my
+      benchmarks it finds lighter faults than other distance
+      estimators<a class="cite" href="#ref-3">[3&ndash;6]</a>, typically within seconds, and on two
+      standard benchmark circuits it improves on the best previously reported bounds. It is also fast
+      enough to act as a filter inside a larger search, as in upcoming work on optimal-depth
+      syndrome-extraction circuits described in the second half of this post. I am grateful to the <a href="https://unitary.foundation/grants/">Unitary
+      Foundation</a> for supporting its development through a microgrant.
+    </p>
+
+    <div class="card">
+      <p>Sisyphus is on PyPI. It currently supports estimation of code distances and syndrome-extraction circuit fault distances for quantum CSS codes.</p>
+      <pre><code>pip install sisyphus-qec</code></pre>
+      <ul class="links">
+        <li><a href="https://github.com/varunmenon1310/sisyphus">GitHub</a></li>
+        <li><a href="https://pypi.org/project/sisyphus-qec/">PyPI</a></li>
+        <li><a href="#try-it">Getting started</a></li>
+      </ul>
+    </div>
+
+    <h2 id="circuits">Circuit-level distance</h2>
+    <p>
+      Circuits typically lose distance through <strong>hook errors</strong> (Figure&nbsp;1). An
+      ancilla qubit interacts with its check's data qubits in sequence, so a single fault on the ancilla qubit partway
+      through spreads to every data qubit it touches afterwards. A few such correlated errors can
+      combine into a logical operator with fewer than <span class="math">d</span> faults. Which qubits
+      are hit depends on the gate order, so circuits for the same code that differ only in scheduling
+      can have quite different circuit-level distances.
+    </p>
+
+    <figure class="fig">
+      <svg class="viz" viewBox="0 0 680 270" role="img" aria-label="Circuit measuring a weight-six check with an ancilla qubit. A single fault on the ancilla qubit after the third gate spreads to the last three data qubits." xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="arr1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker></defs><text class="t-lab" x="108" y="44" text-anchor="end">ancilla qubit</text>
+<line class="wire-a" x1="120" y1="40" x2="470" y2="40"/>
+<line class="wire" x1="120" y1="70" x2="470" y2="70"/>
+<text class="t-small" x="108" y="74" text-anchor="end">data 1</text>
+<line class="wire" x1="120" y1="100" x2="470" y2="100"/>
+<text class="t-small" x="108" y="104" text-anchor="end">data 2</text>
+<line class="wire" x1="120" y1="130" x2="470" y2="130"/>
+<text class="t-small" x="108" y="134" text-anchor="end">data 3</text>
+<line class="wire" x1="120" y1="160" x2="470" y2="160"/>
+<text class="t-small" x="108" y="164" text-anchor="end">data 4</text>
+<line class="wire" x1="120" y1="190" x2="470" y2="190"/>
+<text class="t-small" x="108" y="194" text-anchor="end">data 5</text>
+<line class="wire" x1="120" y1="220" x2="470" y2="220"/>
+<text class="t-small" x="108" y="224" text-anchor="end">data 6</text>
+<line class="wire" x1="165" y1="40" x2="165" y2="70"/>
+<circle class="ctrl" cx="165" cy="40" r="4"/>
+<circle class="targ" cx="165" cy="70" r="8"/>
+<line class="wire" x1="157" y1="70" x2="173" y2="70"/>
+<line class="wire" x1="165" y1="62" x2="165" y2="78"/>
+<line class="wire" x1="217" y1="40" x2="217" y2="100"/>
+<circle class="ctrl" cx="217" cy="40" r="4"/>
+<circle class="targ" cx="217" cy="100" r="8"/>
+<line class="wire" x1="209" y1="100" x2="225" y2="100"/>
+<line class="wire" x1="217" y1="92" x2="217" y2="108"/>
+<line class="wire" x1="269" y1="40" x2="269" y2="130"/>
+<circle class="ctrl" cx="269" cy="40" r="4"/>
+<circle class="targ" cx="269" cy="130" r="8"/>
+<line class="wire" x1="261" y1="130" x2="277" y2="130"/>
+<line class="wire" x1="269" y1="122" x2="269" y2="138"/>
+<line class="wire" x1="321" y1="40" x2="321" y2="160"/>
+<circle class="ctrl" cx="321" cy="40" r="4"/>
+<circle class="targ" cx="321" cy="160" r="8"/>
+<line class="wire" x1="313" y1="160" x2="329" y2="160"/>
+<line class="wire" x1="321" y1="152" x2="321" y2="168"/>
+<line class="wire" x1="373" y1="40" x2="373" y2="190"/>
+<circle class="ctrl" cx="373" cy="40" r="4"/>
+<circle class="targ" cx="373" cy="190" r="8"/>
+<line class="wire" x1="365" y1="190" x2="381" y2="190"/>
+<line class="wire" x1="373" y1="182" x2="373" y2="198"/>
+<line class="wire" x1="425" y1="40" x2="425" y2="220"/>
+<circle class="ctrl" cx="425" cy="40" r="4"/>
+<circle class="targ" cx="425" cy="220" r="8"/>
+<line class="wire" x1="417" y1="220" x2="433" y2="220"/>
+<line class="wire" x1="425" y1="212" x2="425" y2="228"/>
+<line class="spread" x1="295.0" y1="40" x2="470" y2="40"/>
+<line class="spread" x1="331" y1="160" x2="470" y2="160"/>
+<circle class="hit" cx="482" cy="160" r="5"/>
+<line class="spread" x1="383" y1="190" x2="470" y2="190"/>
+<circle class="hit" cx="482" cy="190" r="5"/>
+<line class="spread" x1="435" y1="220" x2="470" y2="220"/>
+<circle class="hit" cx="482" cy="220" r="5"/>
+<polygon class="star" points="295.0,31.0 297.4,36.8 303.6,37.2 298.8,41.2 300.3,47.3 295.0,44.0 289.7,47.3 291.2,41.2 286.4,37.2 292.6,36.8"/>
+<text class="t-hot" x="295.0" y="24" text-anchor="middle">one fault</text>
+<text class="t-lab" x="512" y="186">becomes errors on</text>
+<text class="t-lab" x="512" y="204">three data qubits</text>
+<path class="brace" d="M492,152 q6,0 6,6 V186.0 l5,4 l-5,4 V222 q0,6 -6,6"/>
+<line class="axis" x1="120" y1="252" x2="470" y2="252" marker-end="url(#arr1)"/>
+<text class="t-small" x="480" y="256">time</text>
+</svg>
+      <figcaption><b>Figure 1. Hook errors.</b> An ancilla qubit measures a weight-six check with one
+      two-qubit gate per data qubit. A fault on the ancilla qubit after the third gate (star) propagates to
+      the three data qubits that interact with it later.</figcaption>
+    </figure>
+
+    <p>
+      Writing the detector error model as binary matrices <span class="math">H</span> (detectors by
+      faults) and <span class="math">L</span> (observables by faults), the circuit-level distance is
+      the minimum weight of a vector <span class="math">c</span> with <span class="math">Hc</span> = 0
+      and <span class="math">Lc</span> &ne; 0. The code distance has exactly the same form. For
+      <span class="math">X</span>-type logical operators of a CSS code, <span class="math">H</span> is
+      the <span class="math">Z</span>-check matrix and the rows of <span class="math">L</span> are the
+      <span class="math">Z</span>-type logical operators, so <span class="math">Hc</span> = 0 says that
+      <span class="math">c</span> commutes with every <span class="math">Z</span> check and
+      <span class="math">Lc</span> &ne; 0 says that it acts nontrivially on the encoded qubits. Sisyphus
+      solves this general distance-finding problem for any <span class="math">H</span> and
+      <span class="math">L</span>.
+    </p>
+    <p>
+      Heuristic searches for this minimum give upper bounds. A fault set lighter than
+      <span class="math">d</span> certifies that a circuit loses distance and can be checked
+      independently in Stim, while failing to find one is only evidence. This asymmetry is central to
+      the application in the second half of this post, where I use Sisyphus to quickly eliminate
+      syndrome-extraction circuits of low fault distance by finding upper bounds that fall below the
+      code distance.
+    </p>
+
+    <h2 id="how">How Sisyphus searches</h2>
+    <p>
+      The vectors with <span class="math">Hc</span> = 0 form the kernel of <span class="math">H</span>,
+      a linear space over GF(2). If the rows of a matrix <span class="math">G</span> form a basis of the
+      kernel, every solution is a sum of some subset of the rows of <span class="math">G</span>. (For a code, <span class="math">G</span> is a generator matrix.) Such a
+      basis is easy to compute, but its rows are typically heavy, and the light solutions are hidden
+      among the 2<sup><span class="math">k</span></sup> sums of its <span class="math">k</span> rows.
+      For the codes and circuits of interest here <span class="math">k</span> is in the hundreds to
+      thousands or more, so enumerating these sums is hopeless.
+    </p>
+    <p>
+      Information-set decoding (ISD) searches through these sums by changing the basis. One chooses <span class="math">k</span> columns, called the
+      <em>information set</em>, and row-reduces <span class="math">G</span> so that these columns form
+      an identity matrix. Every row then has a single 1 on the information set. A solution with only one
+      1 there must be one of the rows, and a solution with two or three is the sum of two or three
+      rows, so a light solution that largely avoids the information set can be read off directly.
+      Rather than drawing a fresh information set each time, one can swap one column in and one out,
+      which costs a single pivot instead of a full elimination. The search then becomes a walk over
+      information sets (Figure&nbsp;2).
+      This is the approach of Prange's algorithm<a class="cite" href="#ref-7">[7]</a> and its later
+      variants<a class="cite" href="#ref-8">[8&ndash;10]</a>, and of several open-source distance
+      estimators for quantum codes, including the GAP package
+      <a href="https://github.com/QEC-pages/QDistRnd">QDistRnd</a><a class="cite" href="#ref-3">[3]</a>, the
+      C program <a href="https://github.com/QEC-pages/dist-m4ri">dist-m4ri</a><a class="cite" href="#ref-4">[4]</a>,
+      which also handles circuits, and the Python package
+      <a href="https://github.com/m-webster/codeDistancePYPI">QDistEvol</a><a class="cite" href="#ref-5">[5]</a>.
+      Sisyphus builds on them.
+    </p>
+
+    <figure class="fig wide isd-fig">
+      <svg class="viz isd" viewBox="0 0 680 326" role="img" aria-labelledby="isd-cap">
+<rect class="isd-band" data-c="0" x="151" y="94" width="32" height="148" rx="5"/>
+<text class="isd-mark" data-c="0" x="167.0" y="86" text-anchor="middle"></text>
+<rect class="isd-band" data-c="1" x="185" y="94" width="32" height="148" rx="5"/>
+<text class="isd-mark" data-c="1" x="201.0" y="86" text-anchor="middle"></text>
+<rect class="isd-band" data-c="2" x="219" y="94" width="32" height="148" rx="5"/>
+<text class="isd-mark" data-c="2" x="235.0" y="86" text-anchor="middle"></text>
+<rect class="isd-band" data-c="3" x="253" y="94" width="32" height="148" rx="5"/>
+<text class="isd-mark" data-c="3" x="269.0" y="86" text-anchor="middle"></text>
+<rect class="isd-band" data-c="4" x="287" y="94" width="32" height="148" rx="5"/>
+<text class="isd-mark" data-c="4" x="303.0" y="86" text-anchor="middle"></text>
+<rect class="isd-band" data-c="5" x="321" y="94" width="32" height="148" rx="5"/>
+<text class="isd-mark" data-c="5" x="337.0" y="86" text-anchor="middle"></text>
+<rect class="isd-band" data-c="6" x="355" y="94" width="32" height="148" rx="5"/>
+<text class="isd-mark" data-c="6" x="371.0" y="86" text-anchor="middle"></text>
+<rect class="isd-band" data-c="7" x="389" y="94" width="32" height="148" rx="5"/>
+<text class="isd-mark" data-c="7" x="405.0" y="86" text-anchor="middle"></text>
+<rect class="isd-band" data-c="8" x="423" y="94" width="32" height="148" rx="5"/>
+<text class="isd-mark" data-c="8" x="439.0" y="86" text-anchor="middle"></text>
+<rect class="isd-band" data-c="9" x="457" y="94" width="32" height="148" rx="5"/>
+<text class="isd-mark" data-c="9" x="473.0" y="86" text-anchor="middle"></text>
+<text class="t-small isd-iset" x="150" y="64">information set</text>
+<rect class="isd-rowbox" data-r="0" x="147" y="101" width="346" height="32" rx="6"/>
+<text class="isd-plus" data-r="0" x="136" y="122.0" text-anchor="middle"></text>
+<rect class="isd-cell" data-r="0" data-c="0" x="155" y="105" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="0" data-c="1" x="189" y="105" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="0" data-c="2" x="223" y="105" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="0" data-c="3" x="257" y="105" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="0" data-c="4" x="291" y="105" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="0" data-c="5" x="325" y="105" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="0" data-c="6" x="359" y="105" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="0" data-c="7" x="393" y="105" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="0" data-c="8" x="427" y="105" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="0" data-c="9" x="461" y="105" width="24" height="24" rx="4"/>
+<text class="isd-w" data-r="0" x="506" y="122.0"></text>
+<rect class="isd-rowbox" data-r="1" x="147" y="135" width="346" height="32" rx="6"/>
+<text class="isd-plus" data-r="1" x="136" y="156.0" text-anchor="middle"></text>
+<rect class="isd-cell" data-r="1" data-c="0" x="155" y="139" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="1" data-c="1" x="189" y="139" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="1" data-c="2" x="223" y="139" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="1" data-c="3" x="257" y="139" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="1" data-c="4" x="291" y="139" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="1" data-c="5" x="325" y="139" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="1" data-c="6" x="359" y="139" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="1" data-c="7" x="393" y="139" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="1" data-c="8" x="427" y="139" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="1" data-c="9" x="461" y="139" width="24" height="24" rx="4"/>
+<text class="isd-w" data-r="1" x="506" y="156.0"></text>
+<rect class="isd-rowbox" data-r="2" x="147" y="169" width="346" height="32" rx="6"/>
+<text class="isd-plus" data-r="2" x="136" y="190.0" text-anchor="middle"></text>
+<rect class="isd-cell" data-r="2" data-c="0" x="155" y="173" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="2" data-c="1" x="189" y="173" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="2" data-c="2" x="223" y="173" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="2" data-c="3" x="257" y="173" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="2" data-c="4" x="291" y="173" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="2" data-c="5" x="325" y="173" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="2" data-c="6" x="359" y="173" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="2" data-c="7" x="393" y="173" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="2" data-c="8" x="427" y="173" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="2" data-c="9" x="461" y="173" width="24" height="24" rx="4"/>
+<text class="isd-w" data-r="2" x="506" y="190.0"></text>
+<rect class="isd-rowbox" data-r="3" x="147" y="203" width="346" height="32" rx="6"/>
+<text class="isd-plus" data-r="3" x="136" y="224.0" text-anchor="middle"></text>
+<rect class="isd-cell" data-r="3" data-c="0" x="155" y="207" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="3" data-c="1" x="189" y="207" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="3" data-c="2" x="223" y="207" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="3" data-c="3" x="257" y="207" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="3" data-c="4" x="291" y="207" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="3" data-c="5" x="325" y="207" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="3" data-c="6" x="359" y="207" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="3" data-c="7" x="393" y="207" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="3" data-c="8" x="427" y="207" width="24" height="24" rx="4"/>
+<rect class="isd-cell" data-r="3" data-c="9" x="461" y="207" width="24" height="24" rx="4"/>
+<text class="isd-w" data-r="3" x="506" y="224.0"></text>
+<text class="t-lab" x="116" y="173.0" text-anchor="end">rows</text>
+<line class="grid" x1="150" y1="247" x2="490" y2="247"/>
+<rect class="isd-t" x="155" y="263" width="24" height="24" rx="4"/>
+<rect class="isd-t" x="189" y="263" width="24" height="24" rx="4"/>
+<rect class="isd-t on" x="223" y="263" width="24" height="24" rx="4"/>
+<rect class="isd-t on" x="257" y="263" width="24" height="24" rx="4"/>
+<rect class="isd-t" x="291" y="263" width="24" height="24" rx="4"/>
+<rect class="isd-t" x="325" y="263" width="24" height="24" rx="4"/>
+<rect class="isd-t" x="359" y="263" width="24" height="24" rx="4"/>
+<rect class="isd-t on" x="393" y="263" width="24" height="24" rx="4"/>
+<rect class="isd-t" x="427" y="263" width="24" height="24" rx="4"/>
+<rect class="isd-t" x="461" y="263" width="24" height="24" rx="4"/>
+<text class="t-small" x="116" y="276.0" text-anchor="end">lightest</text>
+<text class="t-small" x="116" y="290.0" text-anchor="end">solution</text>
+<text class="isd-w hot" x="506" y="280.0">weight 3</text>
+<text class="isd-title" x="0" y="22">Illustration of an information-set decoding iteration to find minimum-weight faults</text>
+<text class="isd-sub" x="0" y="46"></text>
+</svg>
+<div class="isd-ui">
+  <button type="button" class="isd-btn" data-act="prev" aria-label="Previous step">&larr;</button>
+  <button type="button" class="isd-btn" data-act="play" aria-label="Pause">Pause</button>
+  <button type="button" class="isd-btn" data-act="next" aria-label="Next step">&rarr;</button>
+  <span class="isd-dots" aria-hidden="true"></span>
+</div>
+<p class="isd-cap" id="isd-cap" aria-live="polite"></p>
+<script>
+(function () {
+  var F = [{"M": [[1, 1, 1, 1, 1, 0, 1, 1, 0, 0], [1, 1, 0, 0, 0, 0, 0, 1, 1, 1], [1, 0, 1, 1, 1, 1, 0, 1, 0, 1], [1, 1, 0, 0, 1, 0, 1, 0, 0, 0]], "I": [], "title": "Find a basis for the kernel", "text": "The rows of G form a basis of the kernel of H, so every solution of Hc = 0 is a sum of rows. Here k = 4 and n = 10. The lightest solution, of weight 3 (bottom), is a sum of rows of G but is not one of them."}, {"M": [[1, 1, 1, 1, 1, 0, 1, 1, 0, 0], [1, 1, 0, 0, 0, 0, 0, 1, 1, 1], [1, 0, 1, 1, 1, 1, 0, 1, 0, 1], [1, 1, 0, 0, 1, 0, 1, 0, 0, 0]], "I": [0, 1, 2, 7], "title": "Choose an information set", "text": "Pick k = 4 columns, the information set (shaded)."}, {"M": [[1, 0, 0, 0, 1, 1, 0, 0, 0, 1], [0, 1, 0, 0, 0, 1, 1, 0, 0, 1], [0, 0, 1, 1, 1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 1, 0, 1, 1, 1, 1]], "I": [0, 1, 2, 7], "title": "Row-reduce", "text": "Row-reduce G so that the information set becomes the identity. Each row now has exactly one 1 on the information set. The lightest solution has two 1s there, so it is the sum of two rows and still does not appear as a row."}, {"M": [[1, 0, 0, 0, 1, 1, 0, 0, 0, 1], [0, 1, 0, 0, 0, 1, 1, 0, 0, 1], [0, 0, 1, 1, 1, 0, 1, 0, 1, 1], [0, 0, 0, 0, 1, 0, 1, 1, 1, 1]], "I": [0, 1, 2, 7], "swap": true, "title": "Swap a column", "text": "Swap one column out of the information set and one in. A single pivot, adding the outlined row to the rows marked +, restores the identity. This is far cheaper than a fresh elimination."}, {"M": [[1, 0, 1, 1, 0, 1, 1, 0, 1, 0], [0, 1, 0, 0, 0, 1, 1, 0, 0, 1], [0, 0, 1, 1, 1, 0, 1, 0, 1, 1], [0, 0, 1, 1, 0, 0, 0, 1, 0, 0]], "I": [0, 1, 4, 7], "found": true, "title": "Read off a light row", "text": "The new information set meets the lightest solution in only one column, so it now appears directly as a row of weight 3."}];
+  var piv = 2, upd = [0, 3], a = 2, b = 4;
+  var root = document.currentScript.closest('figure');
+  var svg = root.querySelector('svg.isd');
+  var q = function (s) { return Array.prototype.slice.call(svg.querySelectorAll(s)); };
+  var cells = q('.isd-cell'), bands = q('.isd-band'), marks = q('.isd-mark'),
+      rows = q('.isd-rowbox'), pluses = q('.isd-plus'), ws = q('.isd-w[data-r]');
+  var title = svg.querySelector('.isd-sub'), iset = svg.querySelector('.isd-iset');
+  var cap = root.querySelector('.isd-cap'), dots = root.querySelector('.isd-dots');
+  var playBtn = root.querySelector('[data-act=play]');
+  F.forEach(function (_, i) { var s = document.createElement('i'); dots.appendChild(s); });
+  var step = 0, timer = null;
+  function show(i) {
+    step = (i + F.length) % F.length;
+    var f = F[step];
+    cells.forEach(function (el) {
+      var r = +el.dataset.r, c = +el.dataset.c;
+      el.classList.toggle('on', f.M[r][c] === 1);
+      el.classList.toggle('found', !!f.found && f.M[r].reduce(function (s, v) { return s + v; }, 0) === 3 && f.M[r][c] === 1);
+    });
+    bands.forEach(function (el) {
+      var c = +el.dataset.c;
+      el.classList.toggle('in', f.I.indexOf(c) >= 0 && !(f.swap && c === a));
+      el.classList.toggle('out', !!f.swap && c === a);
+      el.classList.toggle('enter', !!f.swap && c === b);
+    });
+    marks.forEach(function (el) {
+      var c = +el.dataset.c;
+      el.textContent = f.swap && c === a ? 'out' : f.swap && c === b ? 'in' : '';
+      el.setAttribute('class', 'isd-mark ' + (c === a ? 'hot' : 'acc'));
+    });
+    rows.forEach(function (el) {
+      var r = +el.dataset.r, w = f.M[r].reduce(function (s, v) { return s + v; }, 0);
+      el.classList.toggle('pivot', !!f.swap && r === piv);
+      el.classList.toggle('found', !!f.found && w === 3);
+    });
+    pluses.forEach(function (el) { el.textContent = f.swap && upd.indexOf(+el.dataset.r) >= 0 ? '+' : ''; });
+    ws.forEach(function (el) {
+      var r = +el.dataset.r, w = f.M[r].reduce(function (s, v) { return s + v; }, 0);
+      el.textContent = 'weight ' + w;
+      el.classList.toggle('hot', !!f.found && w === 3);
+    });
+    iset.style.opacity = f.I.length ? 1 : 0;
+    title.textContent = f.title;
+    cap.textContent = f.text;
+    Array.prototype.forEach.call(dots.children, function (d, j) { d.classList.toggle('cur', j === step); });
+  }
+  function play(on) {
+    clearInterval(timer); timer = null;
+    if (on) timer = setInterval(function () { show(step + 1); }, 4200);
+    playBtn.textContent = on ? 'Pause' : 'Play';
+    playBtn.setAttribute('aria-label', on ? 'Pause' : 'Play');
+  }
+  root.querySelector('[data-act=prev]').onclick = function () { play(false); show(step - 1); };
+  root.querySelector('[data-act=next]').onclick = function () { play(false); show(step + 1); };
+  playBtn.onclick = function () { play(!timer); };
+  show(0);
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduce && 'IntersectionObserver' in window) {
+    new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting && timer === null && !root.dataset.started) { root.dataset.started = 1; play(true); } });
+    }, { threshold: 0.4 }).observe(root);
+    play(false);
+  } else { play(false); }
+})();
+</script>
+      <figcaption><b>Figure 2. Information-set decoding on a toy example.</b> A kernel basis <span class="math">G</span> with
+      <span class="math">k</span>&nbsp;=&nbsp;4 rows and 10 columns, with filled squares for 1s. The animation steps through choosing an information
+      set, row-reducing, and swapping a column. Use the arrows to step through it at your own pace.</figcaption>
+    </figure>
+    <p>
+      On large circuit-level instances an unguided walk spends most of its time far from the light
+      solutions. Sisyphus changes the walk in three ways.
+    </p>
+    <p>
+      <strong>Learned column priorities.</strong> Each walk keeps a score for every fault mechanism
+      that rises when the fault appears in a light solution and decays otherwise. High-scoring columns
+      are kept out of the information set, where solutions supported on them can be read off, so the
+      walk concentrates where light solutions have been found and light solutions lead to lighter ones.
+    </p>
+    <p>
+      <strong>Partial restarts.</strong> A walk guided only by its scores settles into a local optimum.
+      When a walk stalls, Sisyphus resets the scores of a random 30% of the columns of its best solution
+      and restarts it in a different region of the search space. This repeated climbing and falling
+      back gives the tool its name (Figure&nbsp;3). Many independent searches run in parallel.
+    </p>
+
+    <figure class="fig">
+      <img src="sisyphus_climb.gif" width="800" height="500" loading="lazy"
+           alt="Animation of a figure pushing a boulder across a rugged landscape. It stalls on local peaks, is kicked into new basins, and plants a flag at each lighter fault set until the weight reaches the distance.">
+      <figcaption><b>Figure 3. The search, schematically.</b> An illustration, not a trace of a real
+      run. Height represents how light the best solution visible from the current information set is.
+      Walks climb to local optima, are kicked into new basins, and record the best fault set so far
+      (lower left) until its weight reaches the distance (lower right).</figcaption>
+    </figure>
+
+    <p>
+      <strong>Time windows.</strong> In a memory experiment, minimum-weight faults typically span
+      one to three rounds. Sisyphus detects the period of the detector error model and searches windows
+      of consecutive detectors 10 to 100 times smaller than the full model. Any solution in a window is
+      a solution of the full circuit. An adaptive scheduler allocates time among windows by the weights
+      they produce and their cost.
+    </p>
+    <p>
+      The GF(2) linear algebra is bit-packed and compiled with Numba, and only the non-identity part of
+      the systematic matrix is stored, saving roughly a factor of ten on circuit-level instances. Every
+      candidate is checked against 64 random combinations of the rows of <span class="math">L</span>,
+      which separate genuine logical faults from trivial solutions (stabilizers, for a code), so a trivial
+      solution is never reported. The
+      <a href="https://github.com/varunmenon1310/sisyphus#method">README</a> has the details. The
+      defaults were chosen by equal-wall-clock comparisons across codes and circuits of very different
+      sizes and should rarely need adjusting.
+    </p>
+
+    <h2 id="benchmarks">Benchmarks</h2>
+    <p>
+      I compared Sisyphus with three other open-source distance estimators on identical instances.
+      These are <a href="https://github.com/QEC-pages/dist-m4ri">dist-m4ri</a><a class="cite" href="#ref-4">[4]</a>, a C program for codes and circuit-level
+      models, <a href="https://github.com/m-webster/codeDistancePYPI">QDistEvol</a><a class="cite" href="#ref-5">[5]</a>, a Python package that evolves a population
+      of information sets, and <a href="https://github.com/a7b/yarn/tree/main/sqetch">sQetch</a><a class="cite" href="#ref-6">[6]</a>, an estimator that runs on
+      GPUs. Each CPU tool had 16 cores of one node, sQetch had an NVIDIA A100, and each tool had three
+      runs per instance. Figure&nbsp;4 shows the four largest circuit-level instances.
+    </p>
+
+    <figure class="fig wide">
+      <svg class="viz" viewBox="0 0 680 510" role="img" aria-label="Lightest undetected logical fault set found by four tools on four large circuits. Sisyphus finds the lightest on all four." xmlns="http://www.w3.org/2000/svg">
+<line class="grid" x1="300.0" y1="30" x2="300.0" y2="476"/>
+<text class="t-tick" x="300.0" y="494" text-anchor="middle">10</text>
+<line class="grid" x1="355.5" y1="30" x2="355.5" y2="476"/>
+<text class="t-tick" x="355.5" y="494" text-anchor="middle">20</text>
+<line class="grid" x1="428.8" y1="30" x2="428.8" y2="476"/>
+<text class="t-tick" x="428.8" y="494" text-anchor="middle">50</text>
+<line class="grid" x1="484.3" y1="30" x2="484.3" y2="476"/>
+<text class="t-tick" x="484.3" y="494" text-anchor="middle">100</text>
+<line class="grid" x1="539.7" y1="30" x2="539.7" y2="476"/>
+<text class="t-tick" x="539.7" y="494" text-anchor="middle">200</text>
+<line class="grid" x1="613.1" y1="30" x2="613.1" y2="476"/>
+<text class="t-tick" x="613.1" y="494" text-anchor="middle">500</text>
+<text class="t-small" x="640" y="20" text-anchor="end">lightest undetected logical fault set found (log scale) · lower is better</text>
+<text class="t-lab" x="0" y="52">Double gross [[288,12,18]]</text>
+<text class="t-small" x="0" y="70">18 rounds · 26,208 faults</text>
+<text class="t-lab" x="208" y="52">Sisyphus</text>
+<line class="stem-s" x1="300" y1="48" x2="337.6" y2="48"/>
+<g class="pt"><title>Sisyphus on Double gross [[288,12,18]]: weight 16</title><circle class="m-sis" cx="337.6" cy="48" r="6.5"/><circle class="hit-area" cx="337.6" cy="48" r="11"/></g>
+<text class="t-val" x="349.6" y="52">16</text>
+<text class="t-small" x="208" y="73">dist-m4ri</text>
+<line class="stem" x1="300" y1="69" x2="347.0" y2="69"/>
+<g class="pt"><title>dist-m4ri on Double gross [[288,12,18]]: weight 18</title><rect class="m-m4ri" x="341.5" y="63.5" width="11" height="11" rx="1.5"/><circle class="hit-area" cx="347.0" cy="69" r="11"/></g>
+<text class="t-tick" x="359.0" y="73">18</text>
+<text class="t-small" x="208" y="94">QDistEvol</text>
+<line class="stem" x1="300" y1="90" x2="390.5" y2="90"/>
+<g class="pt"><title>QDistEvol on Double gross [[288,12,18]]: weight 31</title><polygon class="m-qde" points="390.5,83 397.0,95 384.0,95"/><circle class="hit-area" cx="390.5" cy="90" r="11"/></g>
+<text class="t-tick" x="402.5" y="94">31</text>
+<text class="t-small" x="208" y="115">sQetch</text>
+<line class="stem" x1="300" y1="111" x2="366.7" y2="111"/>
+<g class="pt"><title>sQetch on Double gross [[288,12,18]]: weight 23</title><polygon class="m-sq" points="366.7,104 373.7,111 366.7,118 359.7,111"/><circle class="hit-area" cx="366.7" cy="111" r="11"/></g>
+<text class="t-tick" x="378.7" y="115">23</text>
+<line class="sep" x1="0" y1="135.0" x2="640" y2="135.0"/>
+<text class="t-lab" x="0" y="162">[[360,12,24]]</text>
+<text class="t-small" x="0" y="180">24 rounds · 43,560 faults</text>
+<text class="t-lab" x="208" y="162">Sisyphus</text>
+<line class="stem-s" x1="300" y1="158" x2="359.4" y2="158"/>
+<g class="pt"><title>Sisyphus on [[360,12,24]]: weight 21</title><circle class="m-sis" cx="359.4" cy="158" r="6.5"/><circle class="hit-area" cx="359.4" cy="158" r="11"/></g>
+<text class="t-val" x="371.4" y="162">21</text>
+<text class="t-small" x="208" y="183">dist-m4ri</text>
+<line class="stem" x1="300" y1="179" x2="363.1" y2="179"/>
+<g class="pt"><title>dist-m4ri on [[360,12,24]]: weight 22</title><rect class="m-m4ri" x="357.6" y="173.5" width="11" height="11" rx="1.5"/><circle class="hit-area" cx="363.1" cy="179" r="11"/></g>
+<text class="t-tick" x="375.1" y="183">22</text>
+<text class="t-small" x="208" y="204">QDistEvol</text>
+<line class="stem" x1="300" y1="200" x2="447.3" y2="200"/>
+<g class="pt"><title>QDistEvol on [[360,12,24]]: weight 63</title><polygon class="m-qde" points="447.3,193 453.8,205 440.8,205"/><circle class="hit-area" cx="447.3" cy="200" r="11"/></g>
+<text class="t-tick" x="459.3" y="204">63</text>
+<text class="t-small" x="208" y="225">sQetch</text>
+<line class="stem" x1="300" y1="221" x2="408.9" y2="221"/>
+<g class="pt"><title>sQetch on [[360,12,24]]: weight 39 (codeword recovery returned an invalid fault set)</title><polygon class="m-sq" points="408.9,214 415.9,221 408.9,228 401.9,221"/><circle class="hit-area" cx="408.9" cy="221" r="11"/></g>
+<text class="t-tick" x="420.9" y="225">39*</text>
+<line class="sep" x1="0" y1="245.0" x2="640" y2="245.0"/>
+<text class="t-lab" x="0" y="272">[[756,16,34]]</text>
+<text class="t-small" x="0" y="290">34 rounds · 129,276 faults</text>
+<text class="t-lab" x="208" y="272">Sisyphus</text>
+<line class="stem-s" x1="300" y1="268" x2="390.5" y2="268"/>
+<g class="pt"><title>Sisyphus on [[756,16,34]]: weight 31</title><circle class="m-sis" cx="390.5" cy="268" r="6.5"/><circle class="hit-area" cx="390.5" cy="268" r="11"/></g>
+<text class="t-val" x="402.5" y="272">31</text>
+<text class="t-small" x="208" y="293">dist-m4ri</text>
+<line class="stem" x1="300" y1="289" x2="420.4" y2="289"/>
+<g class="pt"><title>dist-m4ri on [[756,16,34]]: weight 45</title><rect class="m-m4ri" x="414.9" y="283.5" width="11" height="11" rx="1.5"/><circle class="hit-area" cx="420.4" cy="289" r="11"/></g>
+<text class="t-tick" x="432.4" y="293">45</text>
+<text class="t-small" x="208" y="314">QDistEvol</text>
+<text class="t-small" x="300" y="314">out of memory</text>
+<text class="t-small" x="208" y="335">sQetch</text>
+<text class="t-small" x="300" y="335">too large for the GPU</text>
+<line class="sep" x1="0" y1="355.0" x2="640" y2="355.0"/>
+<text class="t-lab" x="0" y="382">APM [[4608,2308,20]]</text>
+<text class="t-small" x="0" y="400">1 round · 29,952 faults</text>
+<text class="t-lab" x="208" y="382">Sisyphus</text>
+<line class="stem-s" x1="300" y1="378" x2="355.5" y2="378"/>
+<g class="pt"><title>Sisyphus on APM [[4608,2308,20]]: weight 20</title><circle class="m-sis" cx="355.5" cy="378" r="6.5"/><circle class="hit-area" cx="355.5" cy="378" r="11"/></g>
+<text class="t-val" x="367.5" y="382">20</text>
+<text class="t-small" x="208" y="403">dist-m4ri</text>
+<line class="stem" x1="300" y1="399" x2="611.5" y2="399"/>
+<g class="pt"><title>dist-m4ri on APM [[4608,2308,20]]: weight 490</title><rect class="m-m4ri" x="606.0" y="393.5" width="11" height="11" rx="1.5"/><circle class="hit-area" cx="611.5" cy="399" r="11"/></g>
+<text class="t-tick" x="623.5" y="403">490</text>
+<text class="t-small" x="208" y="424">QDistEvol</text>
+<line class="stem" x1="300" y1="420" x2="624.1" y2="420"/>
+<g class="pt"><title>QDistEvol on APM [[4608,2308,20]]: weight 574</title><polygon class="m-qde" points="624.1,413 630.6,425 617.6,425"/><circle class="hit-area" cx="624.1" cy="420" r="11"/></g>
+<text class="t-tick" x="636.1" y="424">574</text>
+<text class="t-small" x="208" y="445">sQetch</text>
+<line class="stem" x1="300" y1="441" x2="528.6" y2="441"/>
+<g class="pt"><title>sQetch on APM [[4608,2308,20]]: weight 174</title><polygon class="m-sq" points="528.6,434 535.6,441 528.6,448 521.6,441"/><circle class="hit-area" cx="528.6" cy="441" r="11"/></g>
+<text class="t-tick" x="540.6" y="445">174</text>
+</svg>
+      <figcaption><b>Figure 4. Large instances.</b> Lightest undetected logical fault set found by each
+      tool within the time limit (30 minutes for the first two circuits, one hour for the others). The
+      first three are memory experiments from the
+      <a href="https://github.com/QEC-pages/dist-m4ri/blob/master/benchmark/BENCHMARK.md">dist-m4ri benchmark set</a>, and the last is a single
+      round of syndrome extraction. Sisyphus reached its value in every run, in about a second on the
+      memory experiments and in under six minutes on the single round. Hover over a marker for its
+      value.</figcaption>
+      <details class="data"><summary>Show the data</summary>
+        <div class="tablewrap"><table>
+          <tr><th>circuit</th><th class="num">faults</th><th class="num">Sisyphus</th><th class="num">dist-m4ri</th><th class="num">QDistEvol</th><th class="num">sQetch</th></tr>
+          <tr><td>double gross [[288,12,18]], 18 rounds</td><td class="num">26,208</td><td class="num"><b>16</b></td><td class="num">18</td><td class="num">31</td><td class="num">23</td></tr>
+          <tr><td>[[360,12,24]], 24 rounds</td><td class="num">43,560</td><td class="num"><b>21</b></td><td class="num">22</td><td class="num">63</td><td class="num">39*</td></tr>
+          <tr><td>[[756,16,34]], 34 rounds</td><td class="num">129,276</td><td class="num"><b>31</b></td><td class="num">45</td><td class="num">out of memory</td><td class="num">too large</td></tr>
+          <tr><td>APM [[4608,2308,20]], 1 round</td><td class="num">29,952</td><td class="num"><b>20</b></td><td class="num">490</td><td class="num">574</td><td class="num">174</td></tr>
+        </table></div>
+        <p class="aside">* sQetch's codeword recovery did not return a valid fault set for this weight.</p>
+      </details>
+    </figure>
+
+    <p>
+      The advantage grows with problem size. On the 34-round memory experiment of the [[756,16,34]]
+      bivariate bicycle code, Sisyphus finds a weight-31 fault set within a second, while <a href="https://github.com/QEC-pages/dist-m4ri">dist-m4ri</a> is
+      still at 45 to 50 after an hour. On one round of syndrome extraction for the [[4608,2308,20]] APM
+      code, Sisyphus reaches the code distance of 20 and the other tools remain above 170.
+    </p>
+    <p>
+      For the [[756,16,34]] and [[360,12,24]] memory experiments, the faults that Sisyphus found are
+      the lightest reported to date for these circuits of the
+      <a href="https://github.com/QEC-pages/dist-m4ri/blob/master/benchmark/BENCHMARK.md">dist-m4ri
+      benchmark set</a>. The witnesses are in the
+      repository and can be <a href="https://github.com/varunmenon1310/sisyphus/tree/main/benchmarks">verified
+      against the original circuits</a> with Stim.
+    </p>
+    <div class="tablewrap"><table>
+      <tr><th>benchmark circuit</th><th>basis</th><th class="num">previously reported</th><th class="num">Sisyphus</th></tr>
+      <tr><td><code>bb_756_16_34_si1000_r34</code></td><td>X</td><td class="num">none</td><td class="num"><b>31</b></td></tr>
+      <tr><td><code>bb_360_12_24_si1000_r24</code></td><td>X</td><td class="num">23</td><td class="num"><b>21</b></td></tr>
+      <tr><td><code>bb_360_12_24_si1000_r24</code></td><td>Z</td><td class="num">88</td><td class="num"><b>21</b></td></tr>
+    </table></div>
+    <p>
+      On smaller instances, up to a few thousand qubits or 10<sup>4</sup> faults, every tool that
+      reaches the target does so in about a second, and <a href="https://github.com/QEC-pages/dist-m4ri">dist-m4ri</a> is usually fastest thanks to its
+      lower start-up cost. Sisyphus is aimed at large instances. It is also used by the Unitary
+      Foundation's <a href="https://unitary.foundation/posts/2026_qec_challenge/">QEC Challenge
+      leaderboard</a> to bound the circuit-level distance of submitted circuits.
+    </p>
+
+    <h2 id="syndrome-extraction">Optimal-depth syndrome extraction for ultra-high-rate codes</h2>
+    <p>
+      Sisyphus was motivated by the design of syndrome-extraction circuits for ultra-high-rate codes,
+      the subject of a forthcoming paper. APM codes, GALA codes<a class="cite" href="#ref-11">[11]</a> and Mitten
+      codes<a class="cite" href="#ref-6">[6]</a> reach rates of up to 1/2 with hundreds of logical
+      qubits. Existing proposals use coloration circuits, which measure the
+      <span class="math">X</span> checks and then the <span class="math">Z</span> checks in 24 layers
+      of two-qubit gates. Interleaving the two brings the depth down to the optimum, the largest number
+      of two-qubit gates any one qubit must take part in. Here that is 12, equal to the check weight of
+      the rate-1/2 codes, so interleaving halves each round and reduces idling noise.
+    </p>
+    <p>
+      Interleaving requires the <span class="math">X</span> and <span class="math">Z</span>
+      measurements not to disturb each other. For these block-structured codes this condition reduces
+      to a small linear system over GF(2), and
+      simulated annealing produces about a hundred valid schedules per code in under a minute. The
+      difficulty is distance. Most valid schedules lose distance to hook errors, and even the coloration
+      circuits lose distance within a single round, by as much as eight for the Mitten codes.
+    </p>
+    <p>
+      Finding a good schedule is therefore a search over a vast space in which every evaluation is a hard instance of
+      the problem above. Certifying that a schedule preserves the distance is out of reach at these
+      sizes, but rejecting one only requires a witness, which is exactly what an upper-bound estimator
+      provides.
+    </p>
+    <p>
+      Two observations make rejection cheap. A logical fault set of an
+      <span class="math">r</span>-round memory experiment is also one of every longer experiment, and
+      a fault set lighter than <span class="math">d</span> spans at most
+      <span class="math">d</span>&nbsp;&minus;&nbsp;1 rounds. It therefore suffices to search circuits
+      of 1, 2, 3, 4, 6, 8, &hellip; up to <span class="math">d</span>&nbsp;&minus;&nbsp;1 rounds and to
+      stop at the first fault set lighter than <span class="math">d</span>. Most bad schedules are
+      exposed by the one-round circuit, which takes seconds to search (Figure&nbsp;5).
+    </p>
+
+    <figure class="fig wide">
+      <svg class="viz" viewBox="0 0 680 250" role="img" aria-label="Pipeline. 9,642 valid schedules enter. Sisyphus on one-round circuits rejects 5,864, on two-round circuits 651, on longer circuits 1,943; 1,184 survive the screen." xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker><marker id="arr3h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrowhead-hot"/></marker></defs><rect class="box" x="0" y="30" width="128" height="66" rx="8"/>
+<text class="t-lab" x="64.0" y="52" text-anchor="middle">valid optimal-</text>
+<text class="t-lab" x="64.0" y="69" text-anchor="middle">depth schedules</text>
+<text class="t-num" x="64.0" y="86" text-anchor="middle">9,642</text>
+<rect class="box-s" x="150" y="30" width="118" height="66" rx="8"/>
+<text class="t-lab" x="209.0" y="52" text-anchor="middle">Sisyphus on</text>
+<text class="t-lab" x="209.0" y="69" text-anchor="middle">1 round</text>
+<rect class="box-s" x="290" y="30" width="118" height="66" rx="8"/>
+<text class="t-lab" x="349.0" y="52" text-anchor="middle">Sisyphus on</text>
+<text class="t-lab" x="349.0" y="69" text-anchor="middle">2 rounds</text>
+<rect class="box-s" x="430" y="30" width="118" height="66" rx="8"/>
+<text class="t-lab" x="489.0" y="52" text-anchor="middle">Sisyphus on</text>
+<text class="t-lab" x="489.0" y="69" text-anchor="middle">3, 4, 6, … , d−1</text>
+<rect class="box-ok" x="570" y="30" width="110" height="66" rx="8"/>
+<text class="t-lab" x="625.0" y="52" text-anchor="middle">survive the</text>
+<text class="t-lab" x="625.0" y="69" text-anchor="middle">screen</text>
+<text class="t-num" x="625.0" y="86" text-anchor="middle">1,184</text>
+<line class="flow" x1="128" y1="63.0" x2="146" y2="63.0" marker-end="url(#arr3)"/>
+<line class="flow" x1="268" y1="63.0" x2="286" y2="63.0" marker-end="url(#arr3)"/>
+<line class="flow" x1="408" y1="63.0" x2="426" y2="63.0" marker-end="url(#arr3)"/>
+<line class="flow" x1="548" y1="63.0" x2="566" y2="63.0" marker-end="url(#arr3)"/>
+<line class="flow-rej" x1="209.0" y1="96" x2="209.0" y2="142" marker-end="url(#arr3h)"/>
+<text class="t-numhot" x="209.0" y="164" text-anchor="middle">5,864</text>
+<text class="t-small" x="209.0" y="182" text-anchor="middle">rejected</text>
+<line class="flow-rej" x1="349.0" y1="96" x2="349.0" y2="142" marker-end="url(#arr3h)"/>
+<text class="t-numhot" x="349.0" y="164" text-anchor="middle">651</text>
+<text class="t-small" x="349.0" y="182" text-anchor="middle">rejected</text>
+<line class="flow-rej" x1="489.0" y1="96" x2="489.0" y2="142" marker-end="url(#arr3h)"/>
+<text class="t-numhot" x="489.0" y="164" text-anchor="middle">1,943</text>
+<text class="t-small" x="489.0" y="182" text-anchor="middle">rejected</text>
+<text class="t-small" x="340.0" y="242" text-anchor="middle">Every rejection comes with a verified fault set lighter than d.</text>
+</svg>
+      <figcaption><b>Figure 5. Search by fast rejection.</b> The screening stage applied to 9,642
+      valid optimal-depth schedules for five rate-1/2 APM and GALA codes. A schedule is rejected at the
+      first stage where Sisyphus finds a fault set lighter than <span class="math">d</span>. Survivors
+      proceed to longer, more thorough stages.</figcaption>
+    </figure>
+
+    <p>
+      Most rejected schedules miss by one. Seventy percent of rejections were by faults of weight
+      exactly <span class="math">d</span>&nbsp;&minus;&nbsp;1, so the filter must reliably find
+      minimum-weight faults, not merely light ones. An estimator that stalls a few units above the
+      minimum would pass nearly all of these schedules.
+    </p>
+
+    <figure class="fig wide">
+      <svg class="viz" viewBox="0 0 680 304" role="img" aria-label="Time to reject a bad schedule for five codes. Median about 3 seconds for the 1152-qubit code and one to four minutes for the codes with 1,750 to 2,300 qubits." xmlns="http://www.w3.org/2000/svg">
+<line class="grid" x1="210.0" y1="30" x2="210.0" y2="270"/>
+<text class="t-tick" x="210.0" y="288" text-anchor="middle">1 s</text>
+<line class="grid" x1="280.0" y1="30" x2="280.0" y2="270"/>
+<text class="t-tick" x="280.0" y="288" text-anchor="middle">3 s</text>
+<line class="grid" x1="356.7" y1="30" x2="356.7" y2="270"/>
+<text class="t-tick" x="356.7" y="288" text-anchor="middle">10 s</text>
+<line class="grid" x1="426.6" y1="30" x2="426.6" y2="270"/>
+<text class="t-tick" x="426.6" y="288" text-anchor="middle">30 s</text>
+<line class="grid" x1="503.3" y1="30" x2="503.3" y2="270"/>
+<text class="t-tick" x="503.3" y="288" text-anchor="middle">100 s</text>
+<line class="grid" x1="573.3" y1="30" x2="573.3" y2="270"/>
+<text class="t-tick" x="573.3" y="288" text-anchor="middle">5 min</text>
+<line class="grid" x1="650.0" y1="30" x2="650.0" y2="270"/>
+<text class="t-tick" x="650.0" y="288" text-anchor="middle">1000 s</text>
+<text class="t-small" x="650" y="22" text-anchor="end">wall-clock time until a bad schedule is rejected (log scale, 4 cores)</text>
+<text class="t-lab" x="0" y="57">APM [[1152,580,12]]</text>
+<text class="t-small" x="0" y="73">6,589 of 6,592 rejected</text>
+<line class="whisk" x1="263.3" y1="56" x2="406.2" y2="56"/>
+<rect class="iqr" x="269.4" y="49" width="35.1" height="14" rx="4"/>
+<g class="pt"><title>APM [[1152,580,12]]: median 3 s; half of rejections between 3 s and 4 s; 80% between 2 s and 22 s</title><circle class="med" cx="281.7" cy="56" r="5.5"/><rect class="hit-area" x="263.3" y="42" width="142.9" height="28"/></g>
+<text class="t-val" x="281.7" y="44" text-anchor="middle">3.1 s</text>
+<text class="t-lab" x="0" y="101">GALA [[1764,886,14]]</text>
+<text class="t-small" x="0" y="117">871 of 1,032 rejected</text>
+<line class="whisk" x1="307.2" y1="100" x2="537.6" y2="100"/>
+<rect class="iqr" x="324.1" y="93" width="190.8" height="14" rx="4"/>
+<g class="pt"><title>GALA [[1764,886,14]]: median 72 s; half of rejections between 6 s and 120 s; 80% between 5 s and 171 s</title><circle class="med" cx="482.0" cy="100" r="5.5"/><rect class="hit-area" x="307.2" y="86" width="230.4" height="28"/></g>
+<text class="t-val" x="482.0" y="88" text-anchor="middle">72 s</text>
+<text class="t-lab" x="0" y="145">GALA [[1752,880,14]]</text>
+<text class="t-small" x="0" y="161">226 of 533 rejected</text>
+<line class="whisk" x1="339.9" y1="144" x2="567.7" y2="144"/>
+<rect class="iqr" x="426.8" y="137" width="117.3" height="14" rx="4"/>
+<g class="pt"><title>GALA [[1752,880,14]]: median 105 s; half of rejections between 30 s and 190 s; 80% between 8 s and 275 s</title><circle class="med" cx="506.4" cy="144" r="5.5"/><rect class="hit-area" x="339.9" y="130" width="227.7" height="28"/></g>
+<text class="t-val" x="506.4" y="132" text-anchor="middle">105 s</text>
+<text class="t-lab" x="0" y="189">GALA [[2232,1120,16]]</text>
+<text class="t-small" x="0" y="205">473 of 791 rejected</text>
+<line class="whisk" x1="360.0" y1="188" x2="592.7" y2="188"/>
+<rect class="iqr" x="466.1" y="181" width="92.4" height="14" rx="4"/>
+<g class="pt"><title>GALA [[2232,1120,16]]: median 153 s; half of rejections between 56 s and 238 s; 80% between 11 s and 407 s</title><circle class="med" cx="530.6" cy="188" r="5.5"/><rect class="hit-area" x="360.0" y="174" width="232.8" height="28"/></g>
+<text class="t-val" x="530.6" y="176" text-anchor="middle">153 s</text>
+<text class="t-lab" x="0" y="233">APM [[2304,1156,14]]</text>
+<text class="t-small" x="0" y="249">299 of 694 rejected</text>
+<line class="whisk" x1="417.6" y1="232" x2="595.4" y2="232"/>
+<rect class="iqr" x="526.7" y="225" width="37.9" height="14" rx="4"/>
+<g class="pt"><title>APM [[2304,1156,14]]: median 202 s; half of rejections between 144 s and 262 s; 80% between 26 s and 425 s</title><circle class="med" cx="548.2" cy="232" r="5.5"/><rect class="hit-area" x="417.6" y="218" width="177.8" height="28"/></g>
+<text class="t-val" x="548.2" y="220" text-anchor="middle">202 s</text>
+</svg>
+      <figcaption><b>Figure 6. Time to rejection.</b> Wall-clock time from the start of screening to
+      rejection, on 4 CPU cores including setup. Dots mark the median, bars the interquartile range,
+      and lines the 10th to 90th percentiles. Larger codes need longer circuits to expose bad schedules,
+      but these are still typically rejected within a few minutes.</figcaption>
+    </figure>
+
+    <p>
+      At this throughput the search can be generous with candidates. For the [[1152,580,12]] code,
+      6,589 of 6,592 candidate schedules were rejected, most within seconds. A SAT-based variant also
+      learns from each rejection. A witness consists of a few hook errors, each fixed by the gate order
+      in one check block, so it becomes a clause excluding every schedule that shares those orders.
+    </p>
+    <p>
+      Figure&nbsp;7 summarizes the results. For every code the best optimal-depth circuit improves on
+      the coloration circuit, and for eight of the nine it retains the full code distance as far as
+      extended searches can tell. Survivors passed the full sequence of searches up to
+      <span class="math">d</span>&nbsp;&minus;&nbsp;1 rounds, and for the Mitten codes several
+      independent searches of 30 to 60 minutes per basis. This is strong evidence, not proof.
+    </p>
+
+    <figure class="fig wide">
+      <svg class="viz" viewBox="0 0 680 384" role="img" aria-label="Dumbbell chart. For nine codes, the one-round coloration circuit loses between one and eight units of distance, while the best optimal-depth interleaved circuit keeps the code distance for eight of the nine codes and reaches 21 of 22 for the ninth." xmlns="http://www.w3.org/2000/svg">
+<circle class="m-col" cx="206" cy="18" r="6"/>
+<text class="t-lab" x="218" y="22">coloration circuit, 24 layers, one round</text>
+<circle class="m-sis" cx="206" cy="40" r="6"/>
+<text class="t-lab" x="218" y="44">interleaved circuit, optimal depth (12 layers)</text>
+<line class="dtick" x1="530" y1="12" x2="530" y2="26"/>
+<text class="t-lab" x="540" y="23">code distance d</text>
+<line class="grid" x1="200.0" y1="52" x2="200.0" y2="338"/>
+<text class="t-tick" x="200.0" y="356" text-anchor="middle">8</text>
+<line class="grid" x1="252.9" y1="52" x2="252.9" y2="338"/>
+<text class="t-tick" x="252.9" y="356" text-anchor="middle">10</text>
+<line class="grid" x1="305.9" y1="52" x2="305.9" y2="338"/>
+<text class="t-tick" x="305.9" y="356" text-anchor="middle">12</text>
+<line class="grid" x1="358.8" y1="52" x2="358.8" y2="338"/>
+<text class="t-tick" x="358.8" y="356" text-anchor="middle">14</text>
+<line class="grid" x1="411.8" y1="52" x2="411.8" y2="338"/>
+<text class="t-tick" x="411.8" y="356" text-anchor="middle">16</text>
+<line class="grid" x1="464.7" y1="52" x2="464.7" y2="338"/>
+<text class="t-tick" x="464.7" y="356" text-anchor="middle">18</text>
+<line class="grid" x1="517.6" y1="52" x2="517.6" y2="338"/>
+<text class="t-tick" x="517.6" y="356" text-anchor="middle">20</text>
+<line class="grid" x1="570.6" y1="52" x2="570.6" y2="338"/>
+<text class="t-tick" x="570.6" y="356" text-anchor="middle">22</text>
+<line class="grid" x1="623.5" y1="52" x2="623.5" y2="338"/>
+<text class="t-tick" x="623.5" y="356" text-anchor="middle">24</text>
+<text class="t-small" x="425.0" y="383" text-anchor="middle">lightest undetected logical fault set found</text>
+<text class="t-lab" x="0" y="72"><tspan class="t-small">APM</tspan> [[1152,580,12]]</text>
+<line class="dumb" x1="226.5" y1="68" x2="305.9" y2="68"/>
+<line class="dtick" x1="305.9" y1="57" x2="305.9" y2="79"/>
+<g class="pt"><title>APM [[1152,580,12]], d = 12: coloration circuit loses distance to 9 in one round</title><circle class="m-col" cx="226.5" cy="68" r="6"/><circle class="hit-area" cx="226.5" cy="68" r="11"/></g>
+<g class="pt"><title>APM [[1152,580,12]]: best interleaved circuit keeps d = 12 as far as long searches can tell</title><circle class="m-sis" cx="305.9" cy="68" r="6"/><circle class="hit-area" cx="305.9" cy="68" r="11"/></g>
+<text class="t-val" x="215.5" y="72" text-anchor="end">9</text>
+<text class="t-lab" x="0" y="102"><tspan class="t-small">APM</tspan> [[2304,1156,14]]</text>
+<line class="dumb" x1="332.4" y1="98" x2="358.8" y2="98"/>
+<line class="dtick" x1="358.8" y1="87" x2="358.8" y2="109"/>
+<g class="pt"><title>APM [[2304,1156,14]], d = 14: coloration circuit loses distance to 13 in one round</title><circle class="m-col" cx="332.4" cy="98" r="6"/><circle class="hit-area" cx="332.4" cy="98" r="11"/></g>
+<g class="pt"><title>APM [[2304,1156,14]]: best interleaved circuit keeps d = 14 as far as long searches can tell</title><circle class="m-sis" cx="358.8" cy="98" r="6"/><circle class="hit-area" cx="358.8" cy="98" r="11"/></g>
+<text class="t-val" x="321.4" y="102" text-anchor="end">13</text>
+<line class="sep" x1="0" y1="113.0" x2="650" y2="113.0"/>
+<text class="t-lab" x="0" y="132"><tspan class="t-small">GALA</tspan> [[1752,880,14]]</text>
+<line class="dumb" x1="332.4" y1="128" x2="358.8" y2="128"/>
+<line class="dtick" x1="358.8" y1="117" x2="358.8" y2="139"/>
+<g class="pt"><title>GALA [[1752,880,14]], d = 14: coloration circuit loses distance to 13 in one round</title><circle class="m-col" cx="332.4" cy="128" r="6"/><circle class="hit-area" cx="332.4" cy="128" r="11"/></g>
+<g class="pt"><title>GALA [[1752,880,14]]: best interleaved circuit keeps d = 14 as far as long searches can tell</title><circle class="m-sis" cx="358.8" cy="128" r="6"/><circle class="hit-area" cx="358.8" cy="128" r="11"/></g>
+<text class="t-val" x="321.4" y="132" text-anchor="end">13</text>
+<text class="t-lab" x="0" y="162"><tspan class="t-small">GALA</tspan> [[2232,1120,16]]</text>
+<line class="dumb" x1="332.4" y1="158" x2="411.8" y2="158"/>
+<line class="dtick" x1="411.8" y1="147" x2="411.8" y2="169"/>
+<g class="pt"><title>GALA [[2232,1120,16]], d = 16: coloration circuit loses distance to 13 in one round</title><circle class="m-col" cx="332.4" cy="158" r="6"/><circle class="hit-area" cx="332.4" cy="158" r="11"/></g>
+<g class="pt"><title>GALA [[2232,1120,16]]: best interleaved circuit keeps d = 16 as far as long searches can tell</title><circle class="m-sis" cx="411.8" cy="158" r="6"/><circle class="hit-area" cx="411.8" cy="158" r="11"/></g>
+<text class="t-val" x="321.4" y="162" text-anchor="end">13</text>
+<line class="sep" x1="0" y1="173.0" x2="650" y2="173.0"/>
+<text class="t-lab" x="0" y="192"><tspan class="t-small">Mitten</tspan> [[500,100,16]]</text>
+<line class="dumb" x1="226.5" y1="188" x2="411.8" y2="188"/>
+<line class="dtick" x1="411.8" y1="177" x2="411.8" y2="199"/>
+<g class="pt"><title>Mitten [[500,100,16]], d = 16: coloration circuit loses distance to 9 in one round</title><circle class="m-col" cx="226.5" cy="188" r="6"/><circle class="hit-area" cx="226.5" cy="188" r="11"/></g>
+<g class="pt"><title>Mitten [[500,100,16]]: best interleaved circuit keeps d = 16 as far as long searches can tell</title><circle class="m-sis" cx="411.8" cy="188" r="6"/><circle class="hit-area" cx="411.8" cy="188" r="11"/></g>
+<text class="t-val" x="215.5" y="192" text-anchor="end">9</text>
+<text class="t-lab" x="0" y="222"><tspan class="t-small">Mitten</tspan> [[540,108,18]]</text>
+<line class="dumb" x1="332.4" y1="218" x2="464.7" y2="218"/>
+<line class="dtick" x1="464.7" y1="207" x2="464.7" y2="229"/>
+<g class="pt"><title>Mitten [[540,108,18]], d = 18: coloration circuit loses distance to 13 in one round</title><circle class="m-col" cx="332.4" cy="218" r="6"/><circle class="hit-area" cx="332.4" cy="218" r="11"/></g>
+<g class="pt"><title>Mitten [[540,108,18]]: best interleaved circuit keeps d = 18 as far as long searches can tell</title><circle class="m-sis" cx="464.7" cy="218" r="6"/><circle class="hit-area" cx="464.7" cy="218" r="11"/></g>
+<text class="t-val" x="321.4" y="222" text-anchor="end">13</text>
+<text class="t-lab" x="0" y="252"><tspan class="t-small">Mitten</tspan> [[630,126,20]]</text>
+<line class="dumb" x1="305.9" y1="248" x2="517.6" y2="248"/>
+<line class="dtick" x1="517.6" y1="237" x2="517.6" y2="259"/>
+<g class="pt"><title>Mitten [[630,126,20]], d = 20: coloration circuit loses distance to 12 in one round</title><circle class="m-col" cx="305.9" cy="248" r="6"/><circle class="hit-area" cx="305.9" cy="248" r="11"/></g>
+<g class="pt"><title>Mitten [[630,126,20]]: best interleaved circuit keeps d = 20 as far as long searches can tell</title><circle class="m-sis" cx="517.6" cy="248" r="6"/><circle class="hit-area" cx="517.6" cy="248" r="11"/></g>
+<text class="t-val" x="294.9" y="252" text-anchor="end">12</text>
+<text class="t-lab" x="0" y="282"><tspan class="t-small">Mitten</tspan> [[780,156,22]]</text>
+<line class="dumb" x1="385.3" y1="278" x2="544.1" y2="278"/>
+<line class="dtick" x1="570.6" y1="267" x2="570.6" y2="289"/>
+<g class="pt"><title>Mitten [[780,156,22]], d = 22: coloration circuit loses distance to 15 in one round</title><circle class="m-col" cx="385.3" cy="278" r="6"/><circle class="hit-area" cx="385.3" cy="278" r="11"/></g>
+<g class="pt"><title>Mitten [[780,156,22]]: best interleaved circuit reaches 21</title><circle class="m-sis" cx="544.1" cy="278" r="6"/><circle class="hit-area" cx="544.1" cy="278" r="11"/></g>
+<text class="t-val" x="374.3" y="282" text-anchor="end">15</text>
+<text class="t-lab" x="0" y="312"><tspan class="t-small">Mitten</tspan> [[975,195,24]]</text>
+<line class="dumb" x1="438.2" y1="308" x2="623.5" y2="308"/>
+<line class="dtick" x1="623.5" y1="297" x2="623.5" y2="319"/>
+<g class="pt"><title>Mitten [[975,195,24]], d = 24: coloration circuit loses distance to 17 in one round</title><circle class="m-col" cx="438.2" cy="308" r="6"/><circle class="hit-area" cx="438.2" cy="308" r="11"/></g>
+<g class="pt"><title>Mitten [[975,195,24]]: best interleaved circuit keeps d = 24 as far as long searches can tell</title><circle class="m-sis" cx="623.5" cy="308" r="6"/><circle class="hit-area" cx="623.5" cy="308" r="11"/></g>
+<text class="t-val" x="427.2" y="312" text-anchor="end">17</text>
+</svg>
+      <figcaption><b>Figure 7. Coloration versus interleaved circuits.</b> Lightest undetected logical
+      fault set found for one round of the 24-layer coloration circuit (orange) and for the best
+      optimal-depth (12-layer) interleaved circuit (teal), with the code distance marked. For the
+      Mitten codes, the coloration circuits are the published sequential schedules.</figcaption>
+    </figure>
+
+    <p>
+      The paper also lays these circuits out on a zoned neutral-atom array, with each layer a few rigid
+      moves of the acousto-optic deflectors (AODs), and gives explicit atom-movement programs. The best circuits and the search code are
+      already in the
+      <a href="https://github.com/varunmenon1310/sisyphus/tree/main/syndrome_extraction">Sisyphus
+      repository</a>.
+    </p>
+
+    <h2 id="limits">Limitations</h2>
+    <ul>
+      <li>Sisyphus provides <strong>upper bounds only</strong>. Lower bounds require an exact method,
+      such as the connected-cluster search in the distance estimator
+      <a href="https://github.com/QEC-pages/dist-m4ri">dist-m4ri</a>.</li>
+      <li>Input matrices are dense before packing, so the largest circuit models need several
+      gigabytes of memory, about 1.7&nbsp;GB for a 13,230&nbsp;&times;&nbsp;129,276 model.</li>
+      <li>Code distances are currently supported only for CSS codes. A future version will support
+      non-CSS Pauli stabilizer codes.</li>
+    </ul>
+
+    <h2 id="try-it">Getting started</h2>
+    <p>
+      Install with <code>pip install sisyphus-qec</code>. The following bounds the circuit-level
+      distance of a Stim circuit.
+    </p>
+<pre><code>import stim
+from sisyphus_qec import dem_to_matrices, side_distance, lift_columns, verify_fault_set
+
+circuit = stim.Circuit.from_file("memory_experiment.stim")
+dem = circuit.detector_error_model(decompose_errors=False)
+H, L, columns = dem_to_matrices(dem)      <span class="c"># detectors x faults, observables x faults</span>
+
+res = side_distance(H, None, pair_rows=L, num_trials=10_000_000,
+                    num_workers=16, time_limit=600)
+faults = lift_columns(res.witness, columns)
+assert verify_fault_set(dem, faults)      <span class="c"># independent check on the DEM</span>
+print("circuit distance &lt;=", res.distance)</code></pre>
+    <p>
+      For CSS codes, <code>css_distance(Hx, Hz)</code> takes the check matrices directly. Examples,
+      benchmark witnesses and the syndrome-extraction search are in the
+      <a href="https://github.com/varunmenon1310/sisyphus">GitHub repository</a>. I am especially
+      interested in hard instances where existing tools struggle, and issues and pull requests are
+      welcome. If you use Sisyphus in published work, please cite it together with the distance
+      estimator <a href="https://github.com/QEC-pages/QDistRnd">QDistRnd</a> and the
+      <a href="https://arxiv.org/abs/2603.22532">distance-finding paper of Webster, Jacob and
+      Higgott</a>, whose methods and benchmarks it builds on.
+    </p>
+
+    <h2 id="acknowledgements">Acknowledgements</h2>
+    <p>
+      I am grateful to the <a href="https://unitary.foundation">Unitary Foundation</a> for the
+        microgrant that supported this work, and to the Anthropic
+        <a href="https://www.anthropic.com/news/ai-for-science-program">AI for Science program</a>
+        for its support. Sisyphus was developed in part using models from the Claude family. I thank
+        Nishad Maskara, Oscar Higgott, Tomas Jochym-O'Connor, Andi Gu, Nazli Ugur Koyluoglu, Rohan
+        Mehta and Farrokh Labib for valuable discussions, and Nazli in particular for suggesting the
+        name Sisyphus. Part of Sisyphus was developed while I was an employee at Google Research.
+    </p>
+
+    <h2 id="references">References</h2>
+    <ol class="refs">
+      <li id="ref-1">K. Kasai, &ldquo;Breaking the orthogonality barrier in quantum LDPC codes,&rdquo;
+      <em>Quantum</em> 10, 2205 (2026), <a href="https://arxiv.org/abs/2601.08824">arXiv:2601.08824</a>.</li>
+      <li id="ref-2">C. Zhao, C. Duckering, A. Gu, N. Maskara and H. Zhou, &ldquo;Towards ultra-high-rate
+      quantum error correction with reconfigurable atom arrays,&rdquo;
+      <a href="https://arxiv.org/abs/2604.16209">arXiv:2604.16209</a> (2026).</li>
+      <li id="ref-3">L. P. Pryadko, V. A. Shabashov and V. K. Kozin, &ldquo;QDistRnd: A GAP package for
+      computing the distance of quantum error-correcting codes,&rdquo; <em>Journal of Open Source
+      Software</em> 7, 4120 (2022). <a href="https://github.com/QEC-pages/QDistRnd">GitHub</a></li>
+      <li id="ref-4">L. P. Pryadko and W. Zeng, dist-m4ri, v0.14.7,
+      <a href="https://github.com/QEC-pages/dist-m4ri">github.com/QEC-pages/dist-m4ri</a>.</li>
+      <li id="ref-5">M. Webster, A. Jacob and O. Higgott, &ldquo;Distance-finding algorithms for quantum
+      codes and circuits,&rdquo; <a href="https://arxiv.org/abs/2603.22532">arXiv:2603.22532</a>
+      (2026). Introduces QDistEvol.</li>
+      <li id="ref-6">A. Bhardwaj, M. Ma, N. Meister, R. King, D. Bluvstein, J. Preskill, M. Cain, Q. Xu
+      and H.-Y. Huang, &ldquo;High-rate qLDPC processors,&rdquo;
+      <a href="https://arxiv.org/abs/2607.28795">arXiv:2607.28795</a> (2026). Introduces sQetch.</li>
+      <li id="ref-7">E. Prange, &ldquo;The use of information sets in decoding cyclic codes,&rdquo;
+      <em>IRE Transactions on Information Theory</em> 8, 5&ndash;9 (1962).</li>
+      <li id="ref-8">P. J. Lee and E. F. Brickell, &ldquo;An observation on the security of McEliece's
+      public-key cryptosystem,&rdquo; <em>EUROCRYPT 1988</em>, LNCS 330, 275&ndash;280 (1988).</li>
+      <li id="ref-9">J. Stern, &ldquo;A method for finding codewords of small weight,&rdquo;
+      <em>Coding Theory and Applications</em>, LNCS 388, 106&ndash;113 (1989).</li>
+      <li id="ref-10">A. Canteaut and F. Chabaud, &ldquo;A new algorithm for finding minimum-weight words
+      in a linear code,&rdquo; <em>IEEE Transactions on Information Theory</em> 44, 367&ndash;378
+      (1998).</li>
+      <li id="ref-11">W. Yang, C. Duckering and A. Dua, &ldquo;Designer codes from GALA: compact,
+      self-dual, and rate-1/2 QEC on reconfigurable atom arrays,&rdquo;
+      <a href="https://arxiv.org/abs/2608.07431">arXiv:2608.07431</a> (2026).</li>
+    </ol>
+
+    <footer class="post-foot">
+      <p><a href="/blog/">&larr; All posts</a></p>
+    </footer>
+
+  </article>
+  </main>
+
+  <footer class="wrap footer">
+    <div class="footer-inner">
+      <p class="fine">&copy; 2026 Varun Menon</p>
+    </div>
+  </footer>
+</body>
+</html>
