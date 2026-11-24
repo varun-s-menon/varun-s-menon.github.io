@@ -12,6 +12,8 @@
   <meta property="og:url" content="https://varun-s-menon.github.io/blog/sisyphus/">
   <meta property="og:image" content="https://raw.githubusercontent.com/varunmenon1310/sisyphus/main/docs/sisyphus_climb.gif">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231c1d21'/><circle cx='10' cy='10' r='3' fill='%23f6f3ec'/><circle cx='22' cy='10' r='3' fill='%23f6f3ec'/><circle cx='10' cy='22' r='3' fill='%23f6f3ec'/><circle cx='22' cy='22' r='3' fill='%23e8590c'/></svg>">
+  <script>try{var t=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');if(t==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}</script>
+  <script src="/theme.js" defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
@@ -29,6 +31,10 @@
         <a href="/#path" class="nav-exp">Experience</a>
         <a href="/blog/" class="active">Blog</a>
         <a href="/static/cv.pdf">CV</a>
+        <button type="button" class="theme-toggle" aria-label="Switch to light mode">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
       </nav>
     </div>
   </header>
@@ -41,6 +47,16 @@
       <h1>Sisyphus: a fast circuit-level distance estimator for quantum codes</h1>
       <p class="post-meta">Varun Menon &middot; November 24, 2026 &middot; <a href="https://github.com/varunmenon1310/sisyphus">github.com/varunmenon1310/sisyphus</a></p>
     </header>
+
+    <figure class="fig">
+      <img src="sisyphus_climb.gif" width="800" height="500"
+           alt="Animation of a figure pushing a boulder across a rugged landscape. It stalls on local peaks, is kicked into new basins, and plants a flag at each lighter fault set until the weight reaches the distance.">
+      <figcaption><b>Figure 1. The search, schematically.</b> An illustration, not a trace of a real
+      run. Height represents how light the best solution visible from the current information set is.
+      Walks climb to local optima, are kicked into new basins, and record the best fault set so far
+      (lower left) until its weight reaches the distance (lower right).</figcaption>
+    </figure>
+
 
     <p>
       Quantum error correction encodes logical information redundantly across many physical qubits,
@@ -104,7 +120,7 @@
 
     <h2 id="circuits">Circuit-level distance</h2>
     <p>
-      Circuits typically lose distance through <strong>hook errors</strong> (Figure&nbsp;1). An
+      Circuits typically lose distance through <strong>hook errors</strong> (Figure&nbsp;2). An
       ancilla qubit interacts with its check's data qubits in sequence, so a single fault on the ancilla qubit partway
       through spreads to every data qubit it touches afterwards. A few such correlated errors can
       combine into a logical operator with fewer than <span class="math">d</span> faults. Which qubits
@@ -173,7 +189,7 @@
 <line class="axis" x1="120" y1="252" x2="470" y2="252" marker-end="url(#arr1)"/>
 <text class="t-small" x="480" y="256">time</text>
 </svg>
-      <figcaption><b>Figure 1. Hook errors.</b> An ancilla qubit measures a weight-six check with one
+      <figcaption><b>Figure 2. Hook errors.</b> An ancilla qubit measures a weight-six check with one
       two-qubit gate per data qubit. A fault on the ancilla qubit after the third gate (star) propagates to
       the three data qubits that interact with it later.</figcaption>
     </figure>
@@ -218,7 +234,7 @@
       rows, so a light solution that largely avoids the information set can be read off directly.
       Rather than drawing a fresh information set each time, one can swap one column in and one out,
       which costs a single pivot instead of a full elimination. The search then becomes a walk over
-      information sets (Figure&nbsp;2).
+      information sets (Figure&nbsp;3).
       This is the approach of Prange's algorithm<a class="cite" href="#ref-7">[7]</a> and its later
       variants<a class="cite" href="#ref-8">[8&ndash;10]</a>, and of several open-source distance
       estimators for quantum codes, including the GAP package
@@ -397,7 +413,7 @@
   } else { play(false); }
 })();
 </script>
-      <figcaption><b>Figure 2. Information-set decoding on a toy example.</b> A kernel basis <span class="math">G</span> with
+      <figcaption><b>Figure 3. Information-set decoding on a toy example.</b> A kernel basis <span class="math">G</span> with
       <span class="math">k</span>&nbsp;=&nbsp;4 rows and 10 columns, with filled squares for 1s. The animation steps through choosing an information
       set, row-reducing, and swapping a column. Use the arrows to step through it at your own pace.</figcaption>
     </figure>
@@ -415,17 +431,9 @@
       <strong>Partial restarts.</strong> A walk guided only by its scores settles into a local optimum.
       When a walk stalls, Sisyphus resets the scores of a random 30% of the columns of its best solution
       and restarts it in a different region of the search space. This repeated climbing and falling
-      back gives the tool its name (Figure&nbsp;3). Many independent searches run in parallel.
+      back gives the tool its name (Figure&nbsp;1). Many independent searches run in parallel.
     </p>
 
-    <figure class="fig">
-      <img src="sisyphus_climb.gif" width="800" height="500" loading="lazy"
-           alt="Animation of a figure pushing a boulder across a rugged landscape. It stalls on local peaks, is kicked into new basins, and plants a flag at each lighter fault set until the weight reaches the distance.">
-      <figcaption><b>Figure 3. The search, schematically.</b> An illustration, not a trace of a real
-      run. Height represents how light the best solution visible from the current information set is.
-      Walks climb to local optima, are kicked into new basins, and record the best fault set so far
-      (lower left) until its weight reaches the distance (lower right).</figcaption>
-    </figure>
 
     <p>
       <strong>Time windows.</strong> In a memory experiment, minimum-weight faults typically span

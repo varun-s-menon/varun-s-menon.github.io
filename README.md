@@ -3,7 +3,8 @@
 A static single-page site. No build step.
 
 - `index.html`: all content
-- `style.css`: styling, with automatic light and dark themes
+- `style.css`: styling, with light and dark themes
+- `theme.js`: follows the reader's system light/dark setting, with a toggle in the top bar that overrides it and is remembered
 - `lattice.js`: the animated surface-code patch in the header
 - `static/cv.pdf`: the linked CV
 - `blog/index.html`: the blog page listing all posts (add new entries at the top)
