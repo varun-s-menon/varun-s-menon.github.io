@@ -599,248 +599,75 @@
 
     <h2 id="syndrome-extraction">Optimal-depth syndrome extraction for ultra-high-rate codes</h2>
     <p>
-      Sisyphus was motivated by the design of syndrome-extraction circuits for ultra-high-rate codes,
-      the subject of a forthcoming paper. APM codes, GALA codes<a class="cite" href="#ref-11">[11]</a> and Mitten
+      Sisyphus grew out of a forthcoming paper on syndrome-extraction circuits for ultra-high-rate
+      codes. APM codes, GALA codes<a class="cite" href="#ref-11">[11]</a> and Mitten
       codes<a class="cite" href="#ref-6">[6]</a> reach rates of up to 1/2 with hundreds of logical
-      qubits. Existing proposals use coloration circuits, which measure the
-      <span class="math">X</span> checks and then the <span class="math">Z</span> checks in 24 layers
-      of two-qubit gates. Interleaving the two brings the depth down to the optimum, the largest number
-      of two-qubit gates any one qubit must take part in. Here that is 12, equal to the check weight of
-      the rate-1/2 codes, so interleaving halves each round and reduces idling noise.
+      qubits. Existing circuits for them measure the <span class="math">X</span> checks and then the
+      <span class="math">Z</span> checks. Interleaving the two brings the circuit down to its optimal
+      depth, which halves each round for the rate-1/2 codes and reduces idling noise. The catch is
+      that most interleaved gate orders lose distance to hook errors, and there are far too many of
+      them to study each one carefully.
     </p>
     <p>
-      Interleaving requires the <span class="math">X</span> and <span class="math">Z</span>
-      measurements not to disturb each other. For these block-structured codes this condition reduces
-      to a small linear system over GF(2), and
-      simulated annealing produces about a hundred valid schedules per code in under a minute. The
-      difficulty is distance. Most valid schedules lose distance to hook errors, and even the coloration
-      circuits lose distance within a single round, by as much as eight for the Mitten codes.
-    </p>
-    <p>
-      Finding a good schedule is therefore a search over a vast space in which every evaluation is a hard instance of
-      the problem above. Certifying that a schedule preserves the distance is out of reach at these
-      sizes, but rejecting one only requires a witness, which is exactly what an upper-bound estimator
-      provides.
-    </p>
-    <p>
-      Two observations make rejection cheap. A logical fault set of an
-      <span class="math">r</span>-round memory experiment is also one of every longer experiment, and
-      a fault set lighter than <span class="math">d</span> spans at most
-      <span class="math">d</span>&nbsp;&minus;&nbsp;1 rounds. It therefore suffices to search circuits
-      of 1, 2, 3, 4, 6, 8, &hellip; up to <span class="math">d</span>&nbsp;&minus;&nbsp;1 rounds and to
-      stop at the first fault set lighter than <span class="math">d</span>. Most bad schedules are
-      exposed by the one-round circuit, which takes seconds to search (Figure&nbsp;5).
+      Certifying that a schedule keeps the full distance is out of reach at these sizes, but rejecting
+      one only takes a single fault set lighter than <span class="math">d</span>, which is exactly what
+      Sisyphus finds. A logical fault set of a short memory experiment is also one of every longer
+      experiment, so the search starts with one-round circuits and moves to longer ones only for the
+      schedules that survive (Figure&nbsp;5). Most bad schedules are rejected within seconds to
+      minutes, which makes it possible to screen thousands of candidates per code.
     </p>
 
     <figure class="fig wide">
-      <svg class="viz" viewBox="0 0 680 250" role="img" aria-label="Pipeline. 9,642 valid schedules enter. Sisyphus on one-round circuits rejects 5,864, on two-round circuits 651, on longer circuits 1,943; 1,184 survive the screen." xmlns="http://www.w3.org/2000/svg">
-<defs><marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker><marker id="arr3h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrowhead-hot"/></marker></defs><rect class="box" x="0" y="30" width="128" height="66" rx="8"/>
-<text class="t-lab" x="64.0" y="52" text-anchor="middle">valid optimal-</text>
-<text class="t-lab" x="64.0" y="69" text-anchor="middle">depth schedules</text>
-<text class="t-num" x="64.0" y="86" text-anchor="middle">9,642</text>
-<rect class="box-s" x="150" y="30" width="118" height="66" rx="8"/>
-<text class="t-lab" x="209.0" y="52" text-anchor="middle">Sisyphus on</text>
-<text class="t-lab" x="209.0" y="69" text-anchor="middle">1 round</text>
-<rect class="box-s" x="290" y="30" width="118" height="66" rx="8"/>
-<text class="t-lab" x="349.0" y="52" text-anchor="middle">Sisyphus on</text>
-<text class="t-lab" x="349.0" y="69" text-anchor="middle">2 rounds</text>
-<rect class="box-s" x="430" y="30" width="118" height="66" rx="8"/>
-<text class="t-lab" x="489.0" y="52" text-anchor="middle">Sisyphus on</text>
-<text class="t-lab" x="489.0" y="69" text-anchor="middle">3, 4, 6, … , d−1</text>
-<rect class="box-ok" x="570" y="30" width="110" height="66" rx="8"/>
-<text class="t-lab" x="625.0" y="52" text-anchor="middle">survive the</text>
-<text class="t-lab" x="625.0" y="69" text-anchor="middle">screen</text>
-<text class="t-num" x="625.0" y="86" text-anchor="middle">1,184</text>
-<line class="flow" x1="128" y1="63.0" x2="146" y2="63.0" marker-end="url(#arr3)"/>
-<line class="flow" x1="268" y1="63.0" x2="286" y2="63.0" marker-end="url(#arr3)"/>
-<line class="flow" x1="408" y1="63.0" x2="426" y2="63.0" marker-end="url(#arr3)"/>
-<line class="flow" x1="548" y1="63.0" x2="566" y2="63.0" marker-end="url(#arr3)"/>
-<line class="flow-rej" x1="209.0" y1="96" x2="209.0" y2="142" marker-end="url(#arr3h)"/>
-<text class="t-numhot" x="209.0" y="164" text-anchor="middle">5,864</text>
-<text class="t-small" x="209.0" y="182" text-anchor="middle">rejected</text>
-<line class="flow-rej" x1="349.0" y1="96" x2="349.0" y2="142" marker-end="url(#arr3h)"/>
-<text class="t-numhot" x="349.0" y="164" text-anchor="middle">651</text>
-<text class="t-small" x="349.0" y="182" text-anchor="middle">rejected</text>
-<line class="flow-rej" x1="489.0" y1="96" x2="489.0" y2="142" marker-end="url(#arr3h)"/>
-<text class="t-numhot" x="489.0" y="164" text-anchor="middle">1,943</text>
-<text class="t-small" x="489.0" y="182" text-anchor="middle">rejected</text>
-<text class="t-small" x="340.0" y="242" text-anchor="middle">Every rejection comes with a verified fault set lighter than d.</text>
+      <svg class="viz" viewBox="0 0 680 210" role="img" aria-label="Schematic pipeline. Candidate schedules are searched by Sisyphus on one-round, two-round and longer circuits. Schedules with a fault set lighter than d are rejected at each stage, and the rest survive." xmlns="http://www.w3.org/2000/svg">
+<defs><marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrowhead"/></marker><marker id="arr3h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" class="arrowhead-hot"/></marker></defs>
+<text class="t-small" x="349.0" y="18" text-anchor="middle">Sisyphus, shortest circuits first</text>
+<rect class="box" x="0" y="30" width="128" height="56" rx="8"/>
+<text class="t-lab" x="64.0" y="54" text-anchor="middle">candidate</text>
+<text class="t-lab" x="64.0" y="71" text-anchor="middle">schedules</text>
+<rect class="box-s" x="150" y="30" width="118" height="56" rx="8"/>
+<text class="t-lab" x="209.0" y="63" text-anchor="middle">1 round</text>
+<rect class="box-s" x="290" y="30" width="118" height="56" rx="8"/>
+<text class="t-lab" x="349.0" y="63" text-anchor="middle">2 rounds</text>
+<rect class="box-s" x="430" y="30" width="118" height="56" rx="8"/>
+<text class="t-lab" x="489.0" y="63" text-anchor="middle">longer circuits</text>
+<rect class="box-ok" x="570" y="30" width="110" height="56" rx="8"/>
+<text class="t-lab" x="625.0" y="63" text-anchor="middle">survivors</text>
+<line class="flow" x1="128" y1="58.0" x2="146" y2="58.0" marker-end="url(#arr3)"/>
+<line class="flow" x1="268" y1="58.0" x2="286" y2="58.0" marker-end="url(#arr3)"/>
+<line class="flow" x1="408" y1="58.0" x2="426" y2="58.0" marker-end="url(#arr3)"/>
+<line class="flow" x1="548" y1="58.0" x2="566" y2="58.0" marker-end="url(#arr3)"/>
+<line class="flow-rej" x1="209.0" y1="86" x2="209.0" y2="128" marker-end="url(#arr3h)"/>
+<text class="t-small" x="209.0" y="148" text-anchor="middle">rejected</text>
+<line class="flow-rej" x1="349.0" y1="86" x2="349.0" y2="128" marker-end="url(#arr3h)"/>
+<text class="t-small" x="349.0" y="148" text-anchor="middle">rejected</text>
+<line class="flow-rej" x1="489.0" y1="86" x2="489.0" y2="128" marker-end="url(#arr3h)"/>
+<text class="t-small" x="489.0" y="148" text-anchor="middle">rejected</text>
+<text class="t-small" x="340.0" y="196" text-anchor="middle">Every rejection comes with a verified fault set lighter than d.</text>
 </svg>
-      <figcaption><b>Figure 5. Search by fast rejection.</b> The screening stage applied to 9,642
-      valid optimal-depth schedules for five rate-1/2 APM and GALA codes. A schedule is rejected at the
-      first stage where Sisyphus finds a fault set lighter than <span class="math">d</span>. Survivors
-      proceed to longer, more thorough stages.</figcaption>
+      <figcaption><b>Figure 5. Search by fast rejection, schematically.</b> Candidate schedules are
+      searched on circuits of increasing length, and a schedule is dropped as soon as Sisyphus finds a
+      fault set lighter than <span class="math">d</span>.</figcaption>
     </figure>
 
     <p>
-      Most rejected schedules miss by one. Seventy percent of rejections were by faults of weight
-      exactly <span class="math">d</span>&nbsp;&minus;&nbsp;1, so the filter must reliably find
-      minimum-weight faults, not merely light ones. An estimator that stalls a few units above the
-      minimum would pass nearly all of these schedules.
+      The paper will present the resulting circuits. Results for which we already have circuits
+      include the following.
     </p>
-
-    <figure class="fig wide">
-      <svg class="viz" viewBox="0 0 680 304" role="img" aria-label="Time to reject a bad schedule for five codes. Median about 3 seconds for the 1152-qubit code and one to four minutes for the codes with 1,750 to 2,300 qubits." xmlns="http://www.w3.org/2000/svg">
-<line class="grid" x1="210.0" y1="30" x2="210.0" y2="270"/>
-<text class="t-tick" x="210.0" y="288" text-anchor="middle">1 s</text>
-<line class="grid" x1="280.0" y1="30" x2="280.0" y2="270"/>
-<text class="t-tick" x="280.0" y="288" text-anchor="middle">3 s</text>
-<line class="grid" x1="356.7" y1="30" x2="356.7" y2="270"/>
-<text class="t-tick" x="356.7" y="288" text-anchor="middle">10 s</text>
-<line class="grid" x1="426.6" y1="30" x2="426.6" y2="270"/>
-<text class="t-tick" x="426.6" y="288" text-anchor="middle">30 s</text>
-<line class="grid" x1="503.3" y1="30" x2="503.3" y2="270"/>
-<text class="t-tick" x="503.3" y="288" text-anchor="middle">100 s</text>
-<line class="grid" x1="573.3" y1="30" x2="573.3" y2="270"/>
-<text class="t-tick" x="573.3" y="288" text-anchor="middle">5 min</text>
-<line class="grid" x1="650.0" y1="30" x2="650.0" y2="270"/>
-<text class="t-tick" x="650.0" y="288" text-anchor="middle">1000 s</text>
-<text class="t-small" x="650" y="22" text-anchor="end">wall-clock time until a bad schedule is rejected (log scale, 4 cores)</text>
-<text class="t-lab" x="0" y="57">APM [[1152,580,12]]</text>
-<text class="t-small" x="0" y="73">6,589 of 6,592 rejected</text>
-<line class="whisk" x1="263.3" y1="56" x2="406.2" y2="56"/>
-<rect class="iqr" x="269.4" y="49" width="35.1" height="14" rx="4"/>
-<g class="pt"><title>APM [[1152,580,12]]: median 3 s; half of rejections between 3 s and 4 s; 80% between 2 s and 22 s</title><circle class="med" cx="281.7" cy="56" r="5.5"/><rect class="hit-area" x="263.3" y="42" width="142.9" height="28"/></g>
-<text class="t-val" x="281.7" y="44" text-anchor="middle">3.1 s</text>
-<text class="t-lab" x="0" y="101">GALA [[1764,886,14]]</text>
-<text class="t-small" x="0" y="117">871 of 1,032 rejected</text>
-<line class="whisk" x1="307.2" y1="100" x2="537.6" y2="100"/>
-<rect class="iqr" x="324.1" y="93" width="190.8" height="14" rx="4"/>
-<g class="pt"><title>GALA [[1764,886,14]]: median 72 s; half of rejections between 6 s and 120 s; 80% between 5 s and 171 s</title><circle class="med" cx="482.0" cy="100" r="5.5"/><rect class="hit-area" x="307.2" y="86" width="230.4" height="28"/></g>
-<text class="t-val" x="482.0" y="88" text-anchor="middle">72 s</text>
-<text class="t-lab" x="0" y="145">GALA [[1752,880,14]]</text>
-<text class="t-small" x="0" y="161">226 of 533 rejected</text>
-<line class="whisk" x1="339.9" y1="144" x2="567.7" y2="144"/>
-<rect class="iqr" x="426.8" y="137" width="117.3" height="14" rx="4"/>
-<g class="pt"><title>GALA [[1752,880,14]]: median 105 s; half of rejections between 30 s and 190 s; 80% between 8 s and 275 s</title><circle class="med" cx="506.4" cy="144" r="5.5"/><rect class="hit-area" x="339.9" y="130" width="227.7" height="28"/></g>
-<text class="t-val" x="506.4" y="132" text-anchor="middle">105 s</text>
-<text class="t-lab" x="0" y="189">GALA [[2232,1120,16]]</text>
-<text class="t-small" x="0" y="205">473 of 791 rejected</text>
-<line class="whisk" x1="360.0" y1="188" x2="592.7" y2="188"/>
-<rect class="iqr" x="466.1" y="181" width="92.4" height="14" rx="4"/>
-<g class="pt"><title>GALA [[2232,1120,16]]: median 153 s; half of rejections between 56 s and 238 s; 80% between 11 s and 407 s</title><circle class="med" cx="530.6" cy="188" r="5.5"/><rect class="hit-area" x="360.0" y="174" width="232.8" height="28"/></g>
-<text class="t-val" x="530.6" y="176" text-anchor="middle">153 s</text>
-<text class="t-lab" x="0" y="233">APM [[2304,1156,14]]</text>
-<text class="t-small" x="0" y="249">299 of 694 rejected</text>
-<line class="whisk" x1="417.6" y1="232" x2="595.4" y2="232"/>
-<rect class="iqr" x="526.7" y="225" width="37.9" height="14" rx="4"/>
-<g class="pt"><title>APM [[2304,1156,14]]: median 202 s; half of rejections between 144 s and 262 s; 80% between 26 s and 425 s</title><circle class="med" cx="548.2" cy="232" r="5.5"/><rect class="hit-area" x="417.6" y="218" width="177.8" height="28"/></g>
-<text class="t-val" x="548.2" y="220" text-anchor="middle">202 s</text>
-</svg>
-      <figcaption><b>Figure 6. Time to rejection.</b> Wall-clock time from the start of screening to
-      rejection, on 4 CPU cores including setup. Dots mark the median, bars the interquartile range,
-      and lines the 10th to 90th percentiles. Larger codes need longer circuits to expose bad schedules,
-      but these are still typically rejected within a few minutes.</figcaption>
-    </figure>
-
+    <ul>
+      <li>Optimal-depth circuits, half the depth of coloration circuits, that keep the full distance of
+      the [[1152,580,12]] and [[2304,1156,14]] APM codes and the [[1752,880,14]] and
+      [[2232,1120,16]] GALA codes. Coloration circuits for these codes lose up to three units of
+      distance within a single round.</li>
+      <li>Optimal-depth circuits for the Mitten codes from [[500,100,16]] to [[975,195,24]] that keep
+      the full distance for all but [[780,156,22]], where they reach 21. The published sequential
+      circuits lose up to eight units within a single round.</li>
+      <li>Layouts of these circuits on a zoned neutral-atom array, with explicit atom-movement
+      programs.</li>
+    </ul>
     <p>
-      At this throughput the search can be generous with candidates. For the [[1152,580,12]] code,
-      6,589 of 6,592 candidate schedules were rejected, most within seconds. A SAT-based variant also
-      learns from each rejection. A witness consists of a few hook errors, each fixed by the gate order
-      in one check block, so it becomes a clause excluding every schedule that shares those orders.
-    </p>
-    <p>
-      Figure&nbsp;7 summarizes the results. For every code the best optimal-depth circuit improves on
-      the coloration circuit, and for eight of the nine it retains the full code distance as far as
-      extended searches can tell. Survivors passed the full sequence of searches up to
-      <span class="math">d</span>&nbsp;&minus;&nbsp;1 rounds, and for the Mitten codes several
-      independent searches of 30 to 60 minutes per basis. This is strong evidence, not proof.
-    </p>
-
-    <figure class="fig wide">
-      <svg class="viz" viewBox="0 0 680 384" role="img" aria-label="Dumbbell chart. For nine codes, the one-round coloration circuit loses between one and eight units of distance, while the best optimal-depth interleaved circuit keeps the code distance for eight of the nine codes and reaches 21 of 22 for the ninth." xmlns="http://www.w3.org/2000/svg">
-<circle class="m-col" cx="206" cy="18" r="6"/>
-<text class="t-lab" x="218" y="22">coloration circuit, 24 layers, one round</text>
-<circle class="m-sis" cx="206" cy="40" r="6"/>
-<text class="t-lab" x="218" y="44">interleaved circuit, optimal depth (12 layers)</text>
-<line class="dtick" x1="530" y1="12" x2="530" y2="26"/>
-<text class="t-lab" x="540" y="23">code distance d</text>
-<line class="grid" x1="200.0" y1="52" x2="200.0" y2="338"/>
-<text class="t-tick" x="200.0" y="356" text-anchor="middle">8</text>
-<line class="grid" x1="252.9" y1="52" x2="252.9" y2="338"/>
-<text class="t-tick" x="252.9" y="356" text-anchor="middle">10</text>
-<line class="grid" x1="305.9" y1="52" x2="305.9" y2="338"/>
-<text class="t-tick" x="305.9" y="356" text-anchor="middle">12</text>
-<line class="grid" x1="358.8" y1="52" x2="358.8" y2="338"/>
-<text class="t-tick" x="358.8" y="356" text-anchor="middle">14</text>
-<line class="grid" x1="411.8" y1="52" x2="411.8" y2="338"/>
-<text class="t-tick" x="411.8" y="356" text-anchor="middle">16</text>
-<line class="grid" x1="464.7" y1="52" x2="464.7" y2="338"/>
-<text class="t-tick" x="464.7" y="356" text-anchor="middle">18</text>
-<line class="grid" x1="517.6" y1="52" x2="517.6" y2="338"/>
-<text class="t-tick" x="517.6" y="356" text-anchor="middle">20</text>
-<line class="grid" x1="570.6" y1="52" x2="570.6" y2="338"/>
-<text class="t-tick" x="570.6" y="356" text-anchor="middle">22</text>
-<line class="grid" x1="623.5" y1="52" x2="623.5" y2="338"/>
-<text class="t-tick" x="623.5" y="356" text-anchor="middle">24</text>
-<text class="t-small" x="425.0" y="383" text-anchor="middle">lightest undetected logical fault set found</text>
-<text class="t-lab" x="0" y="72"><tspan class="t-small">APM</tspan> [[1152,580,12]]</text>
-<line class="dumb" x1="226.5" y1="68" x2="305.9" y2="68"/>
-<line class="dtick" x1="305.9" y1="57" x2="305.9" y2="79"/>
-<g class="pt"><title>APM [[1152,580,12]], d = 12: coloration circuit loses distance to 9 in one round</title><circle class="m-col" cx="226.5" cy="68" r="6"/><circle class="hit-area" cx="226.5" cy="68" r="11"/></g>
-<g class="pt"><title>APM [[1152,580,12]]: best interleaved circuit keeps d = 12 as far as long searches can tell</title><circle class="m-sis" cx="305.9" cy="68" r="6"/><circle class="hit-area" cx="305.9" cy="68" r="11"/></g>
-<text class="t-val" x="215.5" y="72" text-anchor="end">9</text>
-<text class="t-lab" x="0" y="102"><tspan class="t-small">APM</tspan> [[2304,1156,14]]</text>
-<line class="dumb" x1="332.4" y1="98" x2="358.8" y2="98"/>
-<line class="dtick" x1="358.8" y1="87" x2="358.8" y2="109"/>
-<g class="pt"><title>APM [[2304,1156,14]], d = 14: coloration circuit loses distance to 13 in one round</title><circle class="m-col" cx="332.4" cy="98" r="6"/><circle class="hit-area" cx="332.4" cy="98" r="11"/></g>
-<g class="pt"><title>APM [[2304,1156,14]]: best interleaved circuit keeps d = 14 as far as long searches can tell</title><circle class="m-sis" cx="358.8" cy="98" r="6"/><circle class="hit-area" cx="358.8" cy="98" r="11"/></g>
-<text class="t-val" x="321.4" y="102" text-anchor="end">13</text>
-<line class="sep" x1="0" y1="113.0" x2="650" y2="113.0"/>
-<text class="t-lab" x="0" y="132"><tspan class="t-small">GALA</tspan> [[1752,880,14]]</text>
-<line class="dumb" x1="332.4" y1="128" x2="358.8" y2="128"/>
-<line class="dtick" x1="358.8" y1="117" x2="358.8" y2="139"/>
-<g class="pt"><title>GALA [[1752,880,14]], d = 14: coloration circuit loses distance to 13 in one round</title><circle class="m-col" cx="332.4" cy="128" r="6"/><circle class="hit-area" cx="332.4" cy="128" r="11"/></g>
-<g class="pt"><title>GALA [[1752,880,14]]: best interleaved circuit keeps d = 14 as far as long searches can tell</title><circle class="m-sis" cx="358.8" cy="128" r="6"/><circle class="hit-area" cx="358.8" cy="128" r="11"/></g>
-<text class="t-val" x="321.4" y="132" text-anchor="end">13</text>
-<text class="t-lab" x="0" y="162"><tspan class="t-small">GALA</tspan> [[2232,1120,16]]</text>
-<line class="dumb" x1="332.4" y1="158" x2="411.8" y2="158"/>
-<line class="dtick" x1="411.8" y1="147" x2="411.8" y2="169"/>
-<g class="pt"><title>GALA [[2232,1120,16]], d = 16: coloration circuit loses distance to 13 in one round</title><circle class="m-col" cx="332.4" cy="158" r="6"/><circle class="hit-area" cx="332.4" cy="158" r="11"/></g>
-<g class="pt"><title>GALA [[2232,1120,16]]: best interleaved circuit keeps d = 16 as far as long searches can tell</title><circle class="m-sis" cx="411.8" cy="158" r="6"/><circle class="hit-area" cx="411.8" cy="158" r="11"/></g>
-<text class="t-val" x="321.4" y="162" text-anchor="end">13</text>
-<line class="sep" x1="0" y1="173.0" x2="650" y2="173.0"/>
-<text class="t-lab" x="0" y="192"><tspan class="t-small">Mitten</tspan> [[500,100,16]]</text>
-<line class="dumb" x1="226.5" y1="188" x2="411.8" y2="188"/>
-<line class="dtick" x1="411.8" y1="177" x2="411.8" y2="199"/>
-<g class="pt"><title>Mitten [[500,100,16]], d = 16: coloration circuit loses distance to 9 in one round</title><circle class="m-col" cx="226.5" cy="188" r="6"/><circle class="hit-area" cx="226.5" cy="188" r="11"/></g>
-<g class="pt"><title>Mitten [[500,100,16]]: best interleaved circuit keeps d = 16 as far as long searches can tell</title><circle class="m-sis" cx="411.8" cy="188" r="6"/><circle class="hit-area" cx="411.8" cy="188" r="11"/></g>
-<text class="t-val" x="215.5" y="192" text-anchor="end">9</text>
-<text class="t-lab" x="0" y="222"><tspan class="t-small">Mitten</tspan> [[540,108,18]]</text>
-<line class="dumb" x1="332.4" y1="218" x2="464.7" y2="218"/>
-<line class="dtick" x1="464.7" y1="207" x2="464.7" y2="229"/>
-<g class="pt"><title>Mitten [[540,108,18]], d = 18: coloration circuit loses distance to 13 in one round</title><circle class="m-col" cx="332.4" cy="218" r="6"/><circle class="hit-area" cx="332.4" cy="218" r="11"/></g>
-<g class="pt"><title>Mitten [[540,108,18]]: best interleaved circuit keeps d = 18 as far as long searches can tell</title><circle class="m-sis" cx="464.7" cy="218" r="6"/><circle class="hit-area" cx="464.7" cy="218" r="11"/></g>
-<text class="t-val" x="321.4" y="222" text-anchor="end">13</text>
-<text class="t-lab" x="0" y="252"><tspan class="t-small">Mitten</tspan> [[630,126,20]]</text>
-<line class="dumb" x1="305.9" y1="248" x2="517.6" y2="248"/>
-<line class="dtick" x1="517.6" y1="237" x2="517.6" y2="259"/>
-<g class="pt"><title>Mitten [[630,126,20]], d = 20: coloration circuit loses distance to 12 in one round</title><circle class="m-col" cx="305.9" cy="248" r="6"/><circle class="hit-area" cx="305.9" cy="248" r="11"/></g>
-<g class="pt"><title>Mitten [[630,126,20]]: best interleaved circuit keeps d = 20 as far as long searches can tell</title><circle class="m-sis" cx="517.6" cy="248" r="6"/><circle class="hit-area" cx="517.6" cy="248" r="11"/></g>
-<text class="t-val" x="294.9" y="252" text-anchor="end">12</text>
-<text class="t-lab" x="0" y="282"><tspan class="t-small">Mitten</tspan> [[780,156,22]]</text>
-<line class="dumb" x1="385.3" y1="278" x2="544.1" y2="278"/>
-<line class="dtick" x1="570.6" y1="267" x2="570.6" y2="289"/>
-<g class="pt"><title>Mitten [[780,156,22]], d = 22: coloration circuit loses distance to 15 in one round</title><circle class="m-col" cx="385.3" cy="278" r="6"/><circle class="hit-area" cx="385.3" cy="278" r="11"/></g>
-<g class="pt"><title>Mitten [[780,156,22]]: best interleaved circuit reaches 21</title><circle class="m-sis" cx="544.1" cy="278" r="6"/><circle class="hit-area" cx="544.1" cy="278" r="11"/></g>
-<text class="t-val" x="374.3" y="282" text-anchor="end">15</text>
-<text class="t-lab" x="0" y="312"><tspan class="t-small">Mitten</tspan> [[975,195,24]]</text>
-<line class="dumb" x1="438.2" y1="308" x2="623.5" y2="308"/>
-<line class="dtick" x1="623.5" y1="297" x2="623.5" y2="319"/>
-<g class="pt"><title>Mitten [[975,195,24]], d = 24: coloration circuit loses distance to 17 in one round</title><circle class="m-col" cx="438.2" cy="308" r="6"/><circle class="hit-area" cx="438.2" cy="308" r="11"/></g>
-<g class="pt"><title>Mitten [[975,195,24]]: best interleaved circuit keeps d = 24 as far as long searches can tell</title><circle class="m-sis" cx="623.5" cy="308" r="6"/><circle class="hit-area" cx="623.5" cy="308" r="11"/></g>
-<text class="t-val" x="427.2" y="312" text-anchor="end">17</text>
-</svg>
-      <figcaption><b>Figure 7. Coloration versus interleaved circuits.</b> Lightest undetected logical
-      fault set found for one round of the 24-layer coloration circuit (orange) and for the best
-      optimal-depth (12-layer) interleaved circuit (teal), with the code distance marked. For the
-      Mitten codes, the coloration circuits are the published sequential schedules.</figcaption>
-    </figure>
-
-    <p>
-      The paper also lays these circuits out on a zoned neutral-atom array, with each layer a few rigid
-      moves of the acousto-optic deflectors (AODs), and gives explicit atom-movement programs. The best circuits and the search code are
-      already in the
+      &ldquo;Keep the full distance&rdquo; here means that extended Sisyphus searches over many rounds
+      found nothing lighter, which is strong evidence but not proof. The circuits and the search code
+      are already in the
       <a href="https://github.com/varunmenon1310/sisyphus/tree/main/syndrome_extraction">Sisyphus
       repository</a>.
     </p>
